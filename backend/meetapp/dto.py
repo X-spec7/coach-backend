@@ -11,5 +11,5 @@ class CreateInstantMeetingRequestDTO(serializers.Serializer):
     recipient_id = serializers.CharField(max_length=255, required=True, allow_blank=False)
 
 class MeetingAuthorizationRequestDTO(serializers.Serializer):
-    zoom_id = serializers.CharField(max_length=255, required=True, allow_blank=False)
+    meeting_number = serializers.CharField(max_length=255, required=True, allow_blank=False)
     role = serializers.IntegerField(required=True)

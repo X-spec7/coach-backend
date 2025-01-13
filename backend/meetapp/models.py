@@ -9,7 +9,7 @@ class Session(models.Model):
     category = models.CharField(max_length=255, blank=False, null=False)
     start_time = models.DateTimeField(blank=False, null=False)
     duration = models.IntegerField(blank=False, null=False)
-    zoom_id = models.CharField(max_length=255, blank=False, null=False)
+    meeting_number = models.CharField(max_length=255, blank=False, null=False)
     encrypted_password = models.CharField(max_length=255, blank=False, null=False)
     join_url = models.CharField(max_length=255, blank=False, null=False)
     creator = models.ForeignKey(User, related_name =_("session_creator"), blank=False, null=False, on_delete=models.CASCADE)
