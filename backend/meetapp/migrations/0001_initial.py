@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('category', models.CharField(max_length=255)),
                 ('start_time', models.DateTimeField()),
                 ('duration', models.IntegerField()),
-                ('zoom_id', models.CharField(max_length=255)),
+                ('meeting_number', models.CharField(max_length=255)),
                 ('encrypted_password', models.CharField(max_length=255)),
                 ('join_url', models.CharField(max_length=255)),
                 ('booked_users', models.ManyToManyField(blank=True, related_name='booked_sessions', to=settings.AUTH_USER_MODEL)),
