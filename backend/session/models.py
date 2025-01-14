@@ -21,7 +21,7 @@ class Meeting(models.Model):
 
 class Session(models.Model):
   title = models.CharField(max_length=255, blank=False, null=False)
-  startDate = models.DateTimeField(null=False)
+  start_date = models.DateTimeField(null=False)
   duration = models.Integer(null=False)
   coach = models.ForeignKey("User", verbose_name=_("Session Creator"), related_name="session", on_delete=models.CASCADE)
   goal = models.CharField(max_length=100, blank=False, null=False)
@@ -33,7 +33,7 @@ class Session(models.Model):
       null=True,
       blank=True,
     )
-  totalParticipantNumber = models.IntegerField(null=False)
+  total_participant_number = models.IntegerField(null=False)
   price = models.IntegerField(null=False)
   equipments = models.JSONField(blank=True, null=True)
   booked_users = models.ManyToManyField("User", verbose_name=_("Booked Users"), related_name="booked_sessions", on_delete=models.CASCADE)
