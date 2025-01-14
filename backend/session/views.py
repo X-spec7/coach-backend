@@ -193,6 +193,54 @@ class BookSessionView(APIView):
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
   
+class JoinSessionView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def post(self, request):
+    data = request.data
+    user = request.user
+
+    sessionId = data.get("sessionId", "")
+    if sessionId == "":
+      return Response(
+        {"error": "Invalid request data"},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+    
+    try:
+      session = Session.objects.get(id=sessionId)
+
+      if not session.booked_users.filter(id=user.id).exists():
+        return Response(
+          {"error": "You haven't booked in this session yet"},
+          status=status.HTTP_400_BAD_REQUEST
+        )
+      
+      if session.coach.id == user.id:
+          return Response(
+              {"start_url": session.meeting.start_url},
+              status=status.HTTP_200_OK
+          )
+      else:
+          return Response(
+              {"join_url": session.meeting.join_url},
+              status=status.HTTP_200_OK
+          )
+      
+    except Session.DoesNotExist:
+      return Response(
+          {"error": "Session not found."},
+          status=status.HTTP_404_NOT_FOUND,
+      )
+    except Exception as e:
+      logger.error(f"Error joining session: {e}")
+      return Response(
+        {"error": "Failed to join session"},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+
 class CreateSessionView(APIView):
   permission_classes = [IsAuthenticated]
   authentication_classes = [JWTAuthentication]
