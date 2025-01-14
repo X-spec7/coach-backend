@@ -236,6 +236,10 @@ class CreateSessionView(APIView):
         'start_time': startDate,
         'duration': duration,
         'type': 2,
+        'settings': {
+          'join_before_host': False,
+          'waiting_room': True,
+        },
         'user_id': 'me'
       }
 
