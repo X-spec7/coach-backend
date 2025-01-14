@@ -1,5 +1,4 @@
 import json
-import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
@@ -8,6 +7,7 @@ from .serializers import MessageSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, DatabaseError
 from django.dispatch import Signal, receiver
+from asgiref.sync import async_to_sync
 from .tasks import update_unread_counts, send_notification_to_group
 from .utils import CacheUtility
 
@@ -20,6 +20,7 @@ cache_utility = CacheUtility()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print('websocket is success to connect with his client')
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'chat_{self.room_name}'
 
@@ -43,6 +44,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
 
         except ObjectDoesNotExist:
+            await self.close()
+        except Exception as e:
+            print(f"Error during WebSocket connection: {e}")
             await self.close()
 
     async def disconnect(self, close_code):
@@ -75,7 +79,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     }
                 )
 
-                update_unread_counts.delay(room_name=self.room_name, sender_id=user_id)
+                update_unread_counts.delay(room_name=self.room_name)
 
             elif message_type == 'system':
                 await self.channel_layer.group_send(
@@ -88,11 +92,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             elif message_type == 'typing':
                 typing_status = data.get('status', False)
+                user_name = self.scope['user'].get_full_name()
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'typing_indicator',
-                        'user': self.scope['user'].id,
+                        'user': user_name,
                         'status': typing_status
                     }
                 )
@@ -102,30 +107,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'error',
                 'message': 'Room or user does not exist.'
             }))
+        except Exception as e:
+            print(f"Unexpected error in receive: {e}")
+            await self.send(json.dumps({'type': 'error', 'message': 'An unexpected error occurred.'}))
 
     async def chat_message(self, event):
-        message = event['message']
-
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': event['message']
         }))
 
     async def system_notification(self, event):
-        message = event['message']
-
         await self.send(text_data=json.dumps({
             'type': 'system',
-            'message': message
+            'message': event['message']
         }))
 
     async def typing_indicator(self, event):
-        user = event['user']
-        status = event['status']
-
         await self.send(text_data=json.dumps({
             'type': 'typing',
-            'user': user,
-            'status': status
+            'user': event['user'],
+            'status': event['status']
         }))
 
     @sync_to_async
@@ -157,7 +158,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
                 return message_instance
 
-        except (ObjectDoesNotExist, DatabaseError):
+        except (ObjectDoesNotExist, DatabaseError) as e:
+            print(f"Error saving message: {e}")
             raise
 
     @sync_to_async
@@ -170,7 +172,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
                 cache_key = f'unread_count_{user_id}'
                 unread_count = UserMessageStatus.objects.filter(user_id=user_id, is_read=False).count()
-                cache_utility.set(cache_key, unread_count, timeout=3600)
+                async_to_sync(cache_utility.set)(cache_key, unread_count, timeout=3600)
 
         except ObjectDoesNotExist:
             pass
@@ -178,16 +180,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_total_unread_count(self, user_id):
         cache_key = f'unread_count_{user_id}'
-        unread_count = cache_utility.get(cache_key)
+        unread_count = async_to_sync(cache_utility.get)(cache_key)
         if unread_count is None:
             unread_count = UserMessageStatus.objects.filter(user_id=user_id, is_read=False).count()
-            cache_utility.set(cache_key, unread_count, timeout=3600)
+            async_to_sync(cache_utility.set)(cache_key, unread_count, timeout=3600)
         return unread_count
 
 
 @receiver(message_saved)
 def handle_message_saved(sender, room, user, **kwargs):
     print(f"Message saved in room {room} by user {user}")
+
 
 @receiver(message_read)
 def handle_message_read(sender, user, message, **kwargs):

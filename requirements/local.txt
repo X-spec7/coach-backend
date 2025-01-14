@@ -24,6 +24,7 @@ daphne==4.1.2
 channels_redis==4.2.1
 aioredis==2.0.1
 celery==5.4.0
+zoomus==1.2.1
 
 # Documentation
 sphinx==7.2.6  # https://github.com/sphinx-doc/sphinx
