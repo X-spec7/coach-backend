@@ -22,22 +22,22 @@ class Meeting(models.Model):
 class Session(models.Model):
   title = models.CharField(max_length=255, blank=False, null=False)
   start_date = models.DateTimeField(null=False)
-  duration = models.Integer(null=False)
-  coach = models.ForeignKey("User", verbose_name=_("Session Creator"), related_name="session", on_delete=models.CASCADE)
+  duration = models.IntegerField(null=False)
+  coach = models.ForeignKey(User, verbose_name=_("Session Creator"), related_name="session", on_delete=models.CASCADE)
   goal = models.CharField(max_length=100, blank=False, null=False)
   level = models.CharField(max_length=100, blank=False, null=False)
   description = models.TextField(blank=False, null=False)
   banner_image_url = models.ImageField(
-      _("Session Banner Image"),
-      upload_to="session_banner_images/",
-      null=True,
-      blank=True,
-    )
+    _("Session Banner Image"),
+    upload_to="session_banner_images/",
+    null=True,
+    blank=True,
+  )
   total_participant_number = models.IntegerField(null=False)
   price = models.IntegerField(null=False)
   equipments = models.JSONField(blank=True, null=True)
-  booked_users = models.ManyToManyField("User", verbose_name=_("Booked Users"), related_name="booked_sessions", on_delete=models.CASCADE)
-  meeting = models.OneToOneField("app.Model", verbose_name=_(""), on_delete=models.CASCADE)
+  booked_users = models.ManyToManyField(User, verbose_name=_("Booked Users"), related_name="booked_sessions")
+  meeting = models.OneToOneField(Meeting, verbose_name=_(""), on_delete=models.CASCADE)
 
   def __str__(self):
     return f"{self.session_name}"
