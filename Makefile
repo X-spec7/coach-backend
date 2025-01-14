@@ -24,10 +24,10 @@ create-database:
 drop-database:
 	docker exec -it postgres15 dropdb coach
 
-make-migrations:
+migrations:
 	python3 manage.py makemigrations
 
-apply-migrations:
+migrate:
 	python3 manage.py migrate
 
 rollback-migrations:
@@ -37,5 +37,5 @@ delete-migrations:
 	find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
 	find . -path "*/migrations/*.pyc" -delete
 
-run-server:
-	python3 manage.py runserver
+run:
+	python3 manage.py runserver 0.0.0.0:8080
