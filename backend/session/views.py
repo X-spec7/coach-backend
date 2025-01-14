@@ -14,7 +14,9 @@ from backend.session.models import Session, Meeting
 from django.conf import settings
 from .dto import (
   GetSessionsRequestDTO,
-  GetTotalSessionCountRequestDTO
+  GetTotalSessionCountRequestDTO,
+  GetMySessionsRequestDTO,
+  GetMySessionTotalCountRequestDTO,
 )
 from .util import create_zoom_meeting
 
@@ -138,7 +140,7 @@ class GetSessionTotalCountView(APIView):
     
     except Exception as e:
       return Response(
-        {"error": "Failed to fetch session data", "detail": (e)},
+        {"error": "Failed to fetch session count", "detail": (e)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
     
@@ -234,9 +236,6 @@ class CreateSessionView(APIView):
         'start_time': startDate,
         'duration': duration,
         'type': 2,
-        'settings': {
-            'join_before_host': True,
-        },
         'user_id': 'me'
       }
 
@@ -281,9 +280,109 @@ class CreateSessionView(APIView):
       )
 
     except Exception as e:
-      logger.error(f"Error creating session: {e}")
       return Response(
         {"error": "Failed to create session"},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+class GetMySessionsView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request):
+    serializer = GetMySessionsRequestDTO(data=request.query_params)
+
+    if not serializer.is_valid():
+      return Response(
+        {"error": "Invalid request data", "details": serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+    
+    validated_data = serializer.validated_data
+
+    limit = validated_data.get("limit")
+    offset = validated_data.get("offset")
+    query = validated_data.get("query")
+
+    try:
+      sessions_query = Session.objects.all()
+
+      if query:
+        sessions_query = sessions_query.filter(title__icontains=query)
+      
+      session_query = sessions_query.filter(coach=request.user)
+
+      total_sessions = session_query.count()
+
+      sessions_query = sessions_query[offset:offset + limit]
+
+      session_data = [
+        {
+          "id": session.id,
+          "title": session.title,
+          "startDate": session.start_date.isoformat(),
+          "duration": session.duration,
+          "coachId": session.coach.id,
+          "coachFullname": f"{session.coach.first_name} {session.coach.last_name}",
+          "goal": session.goal,
+          "level": session.level,
+          "description": session.description,
+          "bannerImageUrl": session.banner_image_url or "",
+          "totalParticipantNumber": session.total_participant_number,
+          "currentParticipantNumber": session.booked_users.count(),
+          "price": session.price,
+          "equipments": session.equipments or [],
+          "meetingId": session.meeting.id,
+        }
+        for session in sessions_query
+      ]
+
+      return Response(
+        {
+          "message": "Sessions fetched successfully.",
+          "sessions": session_data,
+          "totalSessionCount": total_sessions
+        },
+        status=status.HTTP_200_OK
+      )
+    
+    except Exception as e:
+      return Response(
+        {"error": "Failed to fetch session data", "detail": (e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+class GetMySessionTotalCountView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request):
+    serializer = GetMySessionTotalCountRequestDTO(data=request.query_params)
+
+    if not serializer.is_valid():
+      return Response(
+        {"error": "Invalid request data", "details": serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+    
+    validated_data = serializer.validated_data
+    query = validated_data.get("query")
+
+    try:
+      sessions_query = Session.objects.all()
+
+      if query:
+        sessions_query = sessions_query.filter(title__icontains=query)
+
+      total_sessions = sessions_query.count()
+
+      return Response(
+        {"message": "Fetched my session count successfully", "totalSessionCount": total_sessions},
+        status=status.HTTP_200_OK
+      )
+    except Exception as e:
+      return Response(
+        {"error": "Failed to fetch session count", "detail": (e)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
 
