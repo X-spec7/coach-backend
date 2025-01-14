@@ -7,6 +7,10 @@ class GetSessionsRequestDTO(serializers.Serializer):
   booked = serializers.BooleanField(required=False)
   query = serializers.CharField(max_length=255, required=False, allow_null=True)
 
+class GetTotalSessionCountRequestDTO(serializers.Serializer):
+  goal = serializers.CharField(max_length=255, required=False, allow_null=True)
+  booked = serializers.BooleanField(required=False)
+  query = serializers.CharField(max_length=255, required=False, allow_null=True)
 
 class GetTotalSessionCountRequestDTO(serializers.Serializer):
   goal = serializers.CharField(max_length=255, required=False, allow_null=True)
