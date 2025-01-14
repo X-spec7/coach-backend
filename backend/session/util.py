@@ -2,9 +2,12 @@ from zoomus import ZoomClient
 from requests.auth import HTTPBasicAuth
 from time import time
 from time import time as current_time
+import logging
 import requests
 import os
 import jwt
+
+logger = logging.getLogger(__name__)
 
 CLIENT_ID = os.environ.get("ZOOM_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("ZOOM_CLIENT_SECRET", "")
@@ -37,15 +40,21 @@ def create_zoom_meeting(payload):
     """Go to zoom documentation https://developers.zoom.us/docs/meeting-sdk/apis/#operation/meetingCreate"""
     try:
         token = get_valid_access_token()
+        print(f"getting token {token}")
         headers = {'Authorization': f'Bearer {token}'}
-        client = ZoomClient(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, api_account_id=ACCOUNT_ID)
-        response = client.meeting.create(**payload)
+        url = "https://api.zoom.us/v2/users/me/meetings"
+        response = requests.post(url, json=payload, headers=headers)
+        # client = ZoomClient(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, api_account_id=ACCOUNT_ID)
+        # response = client.meeting.create(**payload)
+        print(f"reponse {response}")
         if response.status_code == 201:
             return response.json()
         elif response.status_code == 401 and response.json().get('code') == 124:
             fetch_access_token()
             headers['Authorization'] = f'Bearer {access_token}'
-            response = client.meeting.create(**payload)
+            # response = client.meeting.create(**payload)
+            url = "https://api.zoom.us/v2/users/me/meetings"
+            response = requests.post(url, json=payload, headers=headers)
             if response.status_code == 201:
                 return response.json()
             else:
@@ -53,7 +62,7 @@ def create_zoom_meeting(payload):
         else:
             raise Exception(f"Failed to create meeting: {response.json()}")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error response: {e}")
         raise
 
 def create_auth_signature(meeting_number, role):
