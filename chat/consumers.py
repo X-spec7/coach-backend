@@ -1,15 +1,16 @@
 import json
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
-from .models import ChatRoom, Message, UserMessageStatus
+from backend.chat.models import ChatRoom, Message, UserMessageStatus
 from .serializers import MessageSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, DatabaseError
 from django.dispatch import Signal, receiver
 from .tasks import update_unread_counts, send_notification_to_group
 from .utils import CacheUtility
+from asgiref.sync import sync_to_async
 
 User = get_user_model()
 
@@ -24,28 +25,62 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f'chat_{self.room_name}'
 
         try:
-            room = await sync_to_async(ChatRoom.objects.prefetch_related('members').get)(name=self.room_name)
-            if not room.members.filter(id=self.scope['user'].id).exists():
+            print("this is whole scope", self.scope)
+            self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
+            if not self.room_name:
+                print("Room name missing in URL route.")
+                await self.close()
+                return
+            self.room_group_name = f"chat_{self.room_name}"
+
+            # Ensure the user is authenticated
+            user = self.scope.get("user")
+            if not user or not hasattr(user, "is_authenticated") or not user.is_authenticated:
+                print("User not authenticated or user is None.")
                 await self.close()
                 return
 
-            await self.channel_layer.group_add(
-                self.room_group_name,
-                self.channel_name
-            )
+            print(f"User in scope: {user}")
 
+            self.sender_username = self.user.get_username()
+
+
+            print(f"User {self.user.pk} connected, adding {self.channel_name} to {self.sender_username}")
+
+            # Fetch the chat room
+            try:
+                room = await (ChatRoom.objects.prefetch_related("members").get)(name=self.room_name)
+            except ChatRoom.DoesNotExist:
+                print(f"No room found with name: {self.room_name}")
+                await self.close()
+                return
+
+            # Verify membership
+            is_member = await sync_to_async(room.members.filter(id=user.id).exists)()
+            print("am I member?", is_member)
+            if not is_member:
+                print(f"User {user.id} is not a member of the room {self.room_name}.")
+                await self.close()
+                return
+
+            # Add user to the group and accept the WebSocket connection
+            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
 
-            unread_count = await self.get_total_unread_count(self.scope['user'].id)
+            # Fetch unread count and send notification
+            unread_count = await self.get_total_unread_count(user.id)
             await self.send(json.dumps({
-                'type': 'notification',
-                'unread_count': unread_count
+                "type": "notification",
+                "unread_count": unread_count
             }))
 
-        except ObjectDoesNotExist:
+        except Exception as e:
+            print(f"Error during WebSocket connection: {e}")
             await self.close()
 
+
     async def disconnect(self, close_code):
+        print("websocket was disconnetected")
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -53,7 +88,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data.get('message')
+        message = data['message']
         user_id = self.scope['user'].id
         message_type = data.get('type', 'chat')
 
@@ -88,6 +123,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             elif message_type == 'typing':
                 typing_status = data.get('status', False)
+
+                user_name = await sync_to_async(self.scope['user'].get_full_name)()
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
@@ -177,13 +214,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def get_total_unread_count(self, user_id):
-        cache_key = f'unread_count_{user_id}'
-        unread_count = cache_utility.get(cache_key)
-        if unread_count is None:
-            unread_count = UserMessageStatus.objects.filter(user_id=user_id, is_read=False).count()
-            cache_utility.set(cache_key, unread_count, timeout=3600)
-        return unread_count
-
+        async def fetch_unread_count():
+            cache_key = f'unread_count_{user_id}'
+            unread_count = await cache_utility.get(cache_key)  # Await the async get method
+            if unread_count is None:
+                unread_count = UserMessageStatus.objects.filter(user_id=user_id, is_read=False).count()
+                await cache_utility.set(cache_key, unread_count, timeout=3600)
+            return unread_count
+        
+        return asyncio.run(fetch_unread_count())
 
 @receiver(message_saved)
 def handle_message_saved(sender, room, user, **kwargs):

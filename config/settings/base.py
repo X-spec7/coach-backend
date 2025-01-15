@@ -321,23 +321,19 @@ SIMPLE_JWT = {
     # token expiration times
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),
-    # token rotation options
-    # 'ROTATE_REFRESH_TOKENS': False,
-    # 'BLACKLIST_AFTER_ROTATION': False,
-    # user authentication options
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
     "AUTH_HEADER_TYPES": ("Bearer",),
-    # 'USER_ID_FIELD': 'id',
-    # 'USER_ID_CLAIM': 'user_id',
-    # 'AUTH_TOKEN_CLASSES': (
-    #     'rest_framework_simplejwt.tokens.AccessToken',
-    #     'rest_framework_simplejwt.tokens.RefreshToken',
-    # ),
-    # 'TOKEN_TYPE_CLAIM': 'token_type',
-    # token verification options
-    # 'ALGORITHM': 'HS256',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': (
+        'rest_framework_simplejwt.tokens.AccessToken',
+        'rest_framework_simplejwt.tokens.RefreshToken',
+    ),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'ALGORITHM': 'HS256',
     # 'SIGNING_KEY': None,
     # 'VERIFYING_KEY': None,
-    # # token refresh options
     # 'ALLOW_REFRESH': True,
     # 'REFRESH_TOKEN_ROTATE_REFRESH_TOKENS': False,
     # 'REFRESH_TOKEN_BLACKLIST_AFTER_ROTATION': False,
@@ -349,7 +345,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [("localhost", 6379)],
         },
     },
 }

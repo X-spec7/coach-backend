@@ -35,6 +35,7 @@ class Participant(models.Model):
 
     class Meta:
         unique_together = ("user", "room")
+        app_label = "chat"
 
     def __str__(self):
         return f"{self.user} in {self.room} ({self.role})"

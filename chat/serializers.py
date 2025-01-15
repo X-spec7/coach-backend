@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ChatRoom, Participant, Message, UserMessageStatus
+from backend.chat.models import ChatRoom, Participant, Message, UserMessageStatus
 from backend.users.api.serializers import UserSerializer
 
 
