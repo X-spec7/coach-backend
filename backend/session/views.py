@@ -208,25 +208,25 @@ class JoinSessionView(APIView):
         status=status.HTTP_400_BAD_REQUEST
       )
     
-    try:
-      session = Session.objects.get(id=sessionId)
+    session = Session.objects.get(id=sessionId)
 
+    if session.coach.id == user.id:
+      return Response(
+          {"zoom_url": session.meeting.start_url},
+          status=status.HTTP_200_OK
+      )
+    
+    try:
       if not session.booked_users.filter(id=user.id).exists():
         return Response(
           {"error": "You haven't booked in this session yet"},
           status=status.HTTP_400_BAD_REQUEST
         )
-      
-      if session.coach.id == user.id:
-          return Response(
-              {"start_url": session.meeting.start_url},
-              status=status.HTTP_200_OK
-          )
-      else:
-          return Response(
-              {"join_url": session.meeting.join_url},
-              status=status.HTTP_200_OK
-          )
+
+      return Response(
+          {"zoom_url": session.meeting.join_url},
+          status=status.HTTP_200_OK
+      )
       
     except Session.DoesNotExist:
       return Response(
