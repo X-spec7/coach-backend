@@ -152,7 +152,7 @@ class BookSessionView(APIView):
     data = request.data
     user = request.user
 
-    sessionId = data.get("sessionId", "")
+    sessionId = data.get("sessionId")
     if sessionId == "":
       return Response(
         {"error": "Invalid request data"},
