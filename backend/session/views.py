@@ -325,8 +325,8 @@ class CreateSessionView(APIView):
       return Response(
         {
           "message": "session created successfully",
-          "session": session.id,
-          "meeting": meeting.id
+          "sessionId": session.id,
+          "meetingId": meeting.id
         },
         status=status.HTTP_201_CREATED
       )
