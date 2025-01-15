@@ -17,6 +17,6 @@ urlpatterns = [
   path("get/count/", view=GetSessionTotalCountView.as_view(), name="get session count"),
   path("get/mine/", view=GetMySessionsView.as_view(), name="get sessions"),
   path("get/mine/count/", view=GetMySessionTotalCountView.as_view(), name="get session count"),
-  path("create/meeting/", view=CreateMeetingView.as_view(), name="create sessions"),
   path("book/", view=BookSessionView.as_view(), name="book session"),
+  path("create/instant/", view=CreateMeetingView.as_view(), name="create sessions"),
 ]
