@@ -6,11 +6,13 @@ from .views import (
   GetMySessionsView,
   GetMySessionTotalCountView,
   CreateMeetingView,
-  BookSessionView
+  BookSessionView,
+  JoinSessionView,
 )
 
 urlpatterns = [
   path("create/", view=CreateSessionView.as_view(), name="create session"),
+  path("join/", view=JoinSessionView.as_view(), name="join session"),
   path("get/", view=GetSessionsView.as_view(), name="get sessions"),
   path("get/count/", view=GetSessionTotalCountView.as_view(), name="get session count"),
   path("get/mine/", view=GetMySessionsView.as_view(), name="get sessions"),
