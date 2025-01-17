@@ -1,29 +1,109 @@
+import traceback
 from django.db import models
 from django.db.models import Q
+from rest_framework import status
+from backend.chat.models import Contact, Message
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from backend.chat.models import Contact, Message
-from .serializers import ContactUserSerializer, MessageSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+from backend.users.models import User
+from .serializers import (
+  ContactUserSerializer,
+  MessageSerializer,
+  GetUserSerializer,
+)
+from .dto import GetUsersListDTO
 
 class ContactListView(APIView):
-    def get(self, request):
-        user = request.user
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
 
-        contacts = Contact.objects.filter(
-            Q(user_one=user) | Q(user_two=user)
-        ).select_related("user_one", "user_two", "last_message")
+  def get(self, request):
+    user = request.user
 
-        serializer = ContactUserSerializer(contacts, many=True, context={"request_user": user})
-        return Response(serializer.data)
+    contacts = Contact.objects.filter(
+      Q(user_one=user) | Q(user_two=user)
+    ).select_related("user_one", "user_two", "last_message")
+
+    try:
+      serializer = ContactUserSerializer(contacts, many=True, context={"request_user": user})
+      return Response(
+        {
+          "message": "Contact List Fetched",
+          "contacts": serializer.data,
+        },
+        status=status.HTTP_200_OK
+      )
+    except Exception as e:
+      return Response(
+        {"error": "Failed to fetch session count", "detail": (e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+      
+class UsersListView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request):
+    serializer = GetUsersListDTO(data=request.query_params)
+
+    if not serializer.is_valid():
+      return Response(
+        {"error": "Invalid request data", "details": serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+        
+    validated_data = serializer.validated_data
+
+    limit = validated_data.get("limit", 10)
+    offset = validated_data.get("offset", 0)
+    query = validated_data.get("query", None)
+
+    try:
+      userlists_query = User.objects.all()
+
+      if query:
+        userlists_query = userlists_query.filter(title__icontains=query)
+      
+      total_users = userlists_query.count()
+
+      userlists_query = userlists_query[offset:offset + limit]
+
+      users_list = GetUserSerializer(userlists_query, many=True).data
+
+      return Response(
+        {
+          "message": "Users fetched successfully.",
+          "users": users_list,
+          "totalUsersCount": total_users
+        },
+        status=status.HTTP_200_OK
+      )
+    
+    except AttributeError as e:
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"error": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+    except Exception as e:
+      return Response(
+        {"error": "Failed to fetch session data", "detail": (e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
     
 class MessageListView(ListAPIView):
-    serializer_class = MessageSerializer
+  serializer_class = MessageSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        other_person_id = self.kwargs["otherPersonId"]
-        return Message.objects.filter(
-            (models.Q(sender=user) & models.Q(recipient_id=other_person_id)) |
-            (models.Q(sender_id=other_person_id) & models.Q(recipient=user))
-        ).order_by("-timestamp")
+  def get_queryset(self):
+    user = self.request.user
+    other_person_id = self.kwargs["otherPersonId"]
+    return Message.objects.filter(
+      (models.Q(sender=user) & models.Q(recipient_id=other_person_id)) |
+      (models.Q(sender_id=other_person_id) & models.Q(recipient=user))
+    ).order_by("-timestamp")

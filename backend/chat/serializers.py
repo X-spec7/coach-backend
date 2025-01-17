@@ -1,6 +1,20 @@
 from django.conf import settings
 from rest_framework import serializers
 from backend.chat.models import Contact, Message
+from backend.users.models import User
+
+class GetUserSerializer(serializers.ModelSerializer):
+    avatarUrl = serializers.SerializerMethodField()
+    fullName = serializers.CharField(source="full_name")
+
+    class Meta:
+        model = User
+        fields = ["id", "fullName", "avatarUrl"]
+
+    def get_avatarUrl(self, obj):
+        if obj.avatar_image:
+            return f"{settings.MEDIA_URL}{obj.avatar_image}"
+        return None
 
 class MessageSerializer(serializers.ModelSerializer):
     isRead = serializers.BooleanField(source="is_read")

@@ -85,7 +85,6 @@ class GetSessionsView(APIView):
       )
     
     except AttributeError as e:
-      # Log the full traceback for debugging
       print("AttributeError:", str(e))
       traceback.print_exc()
       return Response(
