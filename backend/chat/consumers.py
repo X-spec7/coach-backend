@@ -69,12 +69,29 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     @sync_to_async
     def update_contact(self, message):
-        contact, created = Contact.objects.get_or_create(
-            user=message.recipient, contact=message.sender
+        # Ensure user_one is the smaller ID and user_two is the larger ID
+        user_one, user_two = (
+            (message.sender, message.recipient)
+            if message.sender.id < message.recipient.id
+            else (message.recipient, message.sender)
         )
-        contact.last_message = message
-        contact.unread_count += 1
-        contact.save()
+        
+        # Get or create the contact
+        contact, created = Contact.objects.get_or_create(
+            user_one=user_one,
+            user_two=user_two,
+            defaults={
+                "last_message": message,
+                "unread_count": 1 if message.recipient == user_two else 0,
+            }
+        )
+
+        # Update the contact's last message and unread count
+        if not created:
+            contact.last_message = message
+            if message.recipient == user_two:
+                contact.unread_count += 1
+            contact.save()
 
     @sync_to_async
     def set_user_status(self, status):

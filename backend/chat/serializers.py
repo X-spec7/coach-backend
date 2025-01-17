@@ -12,8 +12,9 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ["id", "content", "isRead", "sentDate"]
     
     def get_isSent(self, obj):
+        """Determine if the message was sent by the request user."""
         request_user = self.context.get("request_user")
-        return obj.user == request_user
+        return obj.sender == request_user
 
 class ContactUserSerializer(serializers.ModelSerializer):
     avatarUrl = serializers.SerializerMethodField()
@@ -28,7 +29,7 @@ class ContactUserSerializer(serializers.ModelSerializer):
 
     def get_other_person(self, obj):
         request_user = self.context.get("request_user")
-        return obj.contact_two if obj.user_one == request_user else obj.user_one
+        return obj.user_two if obj.user_one == request_user else obj.user_one
 
     def get_avatarUrl(self, obj):
         other_person = self.get_other_person(obj)

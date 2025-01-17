@@ -11,8 +11,8 @@ class ContactListView(APIView):
         user = request.user
 
         contacts = Contact.objects.filter(
-            Q(user_one=user) | Q(contact_two=user)
-        ).select_related("user_one", "contact_two", "last_message")
+            Q(user_one=user) | Q(user_two=user)
+        ).select_related("user_one", "user_two", "last_message")
 
         serializer = ContactUserSerializer(contacts, many=True, context={"request_user": user})
         return Response(serializer.data)

@@ -18,21 +18,21 @@ class Message(models.Model):
     verbose_name_plural = _("Messages")
 
 class Contact(models.Model):
-  user_one = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contacts")
-  contact_two = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reverse_contacts")
+  user_one = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_one_contacts")
+  user_two = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_two_contacts")
   last_message = models.ForeignKey(Message, on_delete=models.SET_NULL, null=True, blank=True, related_name="contact_last_message")
   unread_count = models.PositiveIntegerField(_("Unread Messages Count"), default=0)
 
   class Meta:
     constraints = [
       UniqueConstraint(
-          fields=['user', 'contact'],
+          fields=['user_one', 'user_two'],
           name='unique_contact_pair',
-          condition=Q(user__lt=F('contact'))  # Ensures only one direction is valid
+          condition=Q(user_one__lt=F('user_two'))  # Ensures only one direction is valid
       )
     ]
     verbose_name = _("Contact")
     verbose_name_plural = _("Contacts")
 
   def __str__(self):
-    return f"{self.user} ↔ {self.contact}"
+    return f"{self.user_one} ↔ {self.user_two}"
