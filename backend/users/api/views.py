@@ -60,30 +60,6 @@ def send_mailgun_mail(to_mail, content):
     except Exception as ex:
         print(f"Mailgun error: {ex}")
 
-    # url = "https://api.postmarkapp.com/email"
-    # server_token = os.getenv("MAILGUN_KEY")
-
-    # # Define the email data
-    # email_data = {
-    #     "From": os.getenv("MAILGUN_REGISTERED_EMAIL"),
-    #     "To": to_mail,
-    #     "Subject": "Email Verification",
-    #     "TextBody": "Hey registering user.",
-    #     "HtmlBody": f"{content}",
-    #     "MessageStream": "outbound"
-    # }
-
-    # # Define headers
-    # headers = {
-    #     "Accept": "application/json",
-    #     "Content-Type": "application/json",
-    #     "X-Postmark-Server-Token": server_token,
-    # }
-
-    # response = requests.post(url, json=email_data, headers=headers)
-    # return response
-
-
 class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()

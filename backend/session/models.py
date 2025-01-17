@@ -28,12 +28,13 @@ class Session(models.Model):
     goal = models.CharField(max_length=100, blank=False, null=False)
     level = models.CharField(max_length=100, blank=False, null=False)
     description = models.TextField(blank=False, null=False)
-    banner_image_url = models.ImageField(
+    banner_image = models.ImageField(
         _("Session Banner Image"),
         upload_to="session_banner_images/",
         null=True,
         blank=True,
     )
+    current_participant_number = models.IntegerField(null=False, default=0)
     total_participant_number = models.IntegerField(null=False)
     price = models.IntegerField(null=False)
     equipments = models.JSONField(blank=True, null=True)

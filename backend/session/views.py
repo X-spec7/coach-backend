@@ -1,4 +1,6 @@
 import os
+import traceback
+from django.db import ProgrammingError
 import requests
 import base64
 from django.shortcuts import render
@@ -19,6 +21,8 @@ from .dto import (
   GetMySessionTotalCountRequestDTO,
 )
 from .util import create_zoom_meeting
+
+from .serializers import SessionSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +57,8 @@ class GetSessionsView(APIView):
       if query:
         sessions_query = sessions_query.filter(title__icontains=query)
 
-      if booked is True:  # If booked is True, filter sessions where the user is in booked_users
-        user = request.user  # Get the authenticated user
+      if booked is True:
+        user = request.user
         sessions_query = sessions_query.filter(booked_users=user)
 
       total_sessions = sessions_query.count()
@@ -62,27 +66,14 @@ class GetSessionsView(APIView):
       # Apply pagination (limit and offset)
       sessions_query = sessions_query[offset:offset + limit]
 
-      session_data = [
-        {
-          "id": session.id,
-          "title": session.title,
-          "startDate": session.start_date.isoformat(),
-          "duration": session.duration,
-          "coachId": session.coach.id,
-          "coachFullname": f"{session.coach.first_name} {session.coach.last_name}",
-          "goal": session.goal,
-          "level": session.level,
-          "description": session.description,
-          "bannerImageUrl": session.banner_image_url or "",
-          "totalParticipantNumber": session.total_participant_number,
-          "currentParticipantNumber": session.booked_users.count(),
-          "price": session.price,
-          "equipments": session.equipments or [],
-          "meetingId": session.meeting.id,
-          "booked": request.user in session.booked_users.all()
-        }
-        for session in sessions_query
-      ]
+      session_data = SessionSerializer(sessions_query, many=True).data
+
+      for session in session_data:
+        session_obj = Session.objects.get(id=session["id"])
+        booked_users = session_obj.booked_users.all()
+        is_booked = booked_users.filter(id=request.user.id).exists()
+
+        session["booked"] = is_booked
 
       return Response(
         {
@@ -91,6 +82,15 @@ class GetSessionsView(APIView):
           "totalSessionCount": total_sessions
         },
         status=status.HTTP_200_OK
+      )
+    
+    except AttributeError as e:
+      # Log the full traceback for debugging
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"error": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
 
     except Exception as e:
@@ -263,7 +263,7 @@ class CreateSessionView(APIView):
 
     bannerImageBase64 = data.get('bannerImage')
 
-    banner_image_url = None 
+    banner_image = None 
     if bannerImageBase64:
       format, imgstr = bannerImageBase64.split(';base64,')
       ext = format.split('/')[-1]
@@ -276,7 +276,7 @@ class CreateSessionView(APIView):
 
       with open(file_path, "wb") as f:
         f.write(base64.b64decode(imgstr))
-      banner_image_url = f"session_banner_images/{file_name}"
+      banner_image = f"session_banner_images/{file_name}"
     try:
       createMeetingPayload = {
         'topic': title,
@@ -317,8 +317,8 @@ class CreateSessionView(APIView):
         meeting=meeting,
       )
 
-      if banner_image_url and banner_image_url != "":
-        session.banner_image_url = banner_image_url
+      if banner_image and banner_image != "":
+        session.banner_image = banner_image
 
       session.save()
 
@@ -345,16 +345,16 @@ class GetMySessionsView(APIView):
     serializer = GetMySessionsRequestDTO(data=request.query_params)
 
     if not serializer.is_valid():
-      return Response(
-        {"error": "Invalid request data", "details": serializer.errors},
-        status=status.HTTP_400_BAD_REQUEST
-      )
+        return Response(
+            {"error": "Invalid request data", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
     validated_data = serializer.validated_data
 
     limit = validated_data.get("limit")
     offset = validated_data.get("offset")
-    query = validated_data.get("query")
+    query = validated_data.get("query", "")
 
     try:
       sessions_query = Session.objects.all()
@@ -368,27 +368,16 @@ class GetMySessionsView(APIView):
 
       sessions_query = sessions_query[offset:offset + limit]
 
-      session_data = [
-        {
-          "id": session.id,
-          "title": session.title,
-          "startDate": session.start_date.isoformat(),
-          "duration": session.duration,
-          "coachId": session.coach.id,
-          "coachFullname": f"{session.coach.first_name} {session.coach.last_name}",
-          "goal": session.goal,
-          "level": session.level,
-          "description": session.description,
-          "bannerImageUrl": session.banner_image_url or "",
-          "totalParticipantNumber": session.total_participant_number,
-          "currentParticipantNumber": session.booked_users.count(),
-          "price": session.price,
-          "equipments": session.equipments or [],
-          "meetingId": session.meeting.id,
-        }
-        for session in sessions_query
-      ]
+      session_data = []
 
+      for session in sessions_query:
+        # Serialize each session object using the SessionSerializer
+        serializer = SessionSerializer(session)
+        
+        # Append the serialized data to the session_data list
+        session_data.append(serializer.data)
+
+      # Now you can use `session_data` to return a response
       return Response(
         {
           "message": "Sessions fetched successfully.",
@@ -396,6 +385,32 @@ class GetMySessionsView(APIView):
           "totalSessionCount": total_sessions
         },
         status=status.HTTP_200_OK
+      )
+    
+    except ProgrammingError as e:
+      # Log the error for debugging purposes
+      print(f"Database error: {str(e)}")
+      return Response(
+        {"error": "Database error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+    except AssertionError as e:
+      # Log the full traceback for debugging
+      print("AssertionError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"error": "Assertion error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+    except AttributeError as e:
+      # Log the full traceback for debugging
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"error": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
     
     except Exception as e:
