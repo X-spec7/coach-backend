@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q, UniqueConstraint, F
 from backend.users.models import User
 from django.utils.translation import gettext_lazy as _
 
@@ -17,13 +18,19 @@ class Message(models.Model):
     verbose_name_plural = _("Messages")
 
 class Contact(models.Model):
-  user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contacts")
-  contact = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reverse_contacts")
+  user_one = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contacts")
+  contact_two = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reverse_contacts")
   last_message = models.ForeignKey(Message, on_delete=models.SET_NULL, null=True, blank=True, related_name="contact_last_message")
   unread_count = models.PositiveIntegerField(_("Unread Messages Count"), default=0)
 
   class Meta:
-    unique_together = ("user", "contact")
+    constraints = [
+      UniqueConstraint(
+          fields=['user', 'contact'],
+          name='unique_contact_pair',
+          condition=Q(user__lt=F('contact'))  # Ensures only one direction is valid
+      )
+    ]
     verbose_name = _("Contact")
     verbose_name_plural = _("Contacts")
 
