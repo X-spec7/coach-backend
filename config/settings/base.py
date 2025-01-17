@@ -92,6 +92,7 @@ LOCAL_APPS = [
     "backend.users",
     "backend.meetapp",
     "backend.session",
+    "backend.chat",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

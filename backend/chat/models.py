@@ -1,5 +1,5 @@
 from django.db import models
-from backend.users import User
+from backend.users.models import User
 from django.utils.translation import gettext_lazy as _
 
 class Message(models.Model):
@@ -12,6 +12,10 @@ class Message(models.Model):
   def __str__(self):
     return f"From {self.sender} to {self.recipient}: {self.content[:20]}"
 
+  class Meta:
+    verbose_name = _("Message")
+    verbose_name_plural = _("Messages")
+
 class Contact(models.Model):
   user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contacts")
   contact = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reverse_contacts")
@@ -20,6 +24,8 @@ class Contact(models.Model):
 
   class Meta:
     unique_together = ("user", "contact")
+    verbose_name = _("Contact")
+    verbose_name_plural = _("Contacts")
 
   def __str__(self):
     return f"{self.user} ↔ {self.contact}"
