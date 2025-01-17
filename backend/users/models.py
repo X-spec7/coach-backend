@@ -1,6 +1,7 @@
 from typing import ClassVar
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db.models import CharField, EmailField
+from django.utils.timezone import now
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -74,6 +75,15 @@ class User(AbstractUser):
     specialization = models.CharField(
         _("Specialization"), max_length=255, blank=True, null=True
     )
+
+    status = models.CharField(
+        _("Status"),
+        max_length=50,
+        choices=[("online", _("Online")), ("offline", _("Offline"))],
+        default="offline",
+    )
+
+    last_seen = models.DateTimeField(_("Last Seen"), default=now)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
