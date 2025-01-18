@@ -13,12 +13,10 @@ pytest==8.0.2  # https://github.com/pytest-dev/pytest
 pytest-sugar==1.0.0  # https://github.com/Frozenball/pytest-sugar
 djangorestframework-stubs[compatible-mypy]==3.14.5  # https://github.com/typeddjango/djangorestframework-stubs
 
-boto3
 matplotlib
 docker
 django_cryptography
 bandit
-pandas==2.2.1
 channels==4.2.0
 daphne==4.1.2
 channels_redis==4.2.1
