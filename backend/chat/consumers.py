@@ -1,197 +1,102 @@
 import json
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
-from django.contrib.auth import get_user_model
-from .models import ChatRoom, Message, UserMessageStatus
-from .serializers import MessageSerializer
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction, DatabaseError
-from django.dispatch import Signal, receiver
-from asgiref.sync import async_to_sync
-from .tasks import update_unread_counts, send_notification_to_group
-from .utils import CacheUtility
-
-User = get_user_model()
-
-message_saved = Signal()
-message_read = Signal()
-
-cache_utility = CacheUtility()
+from backend.chat.models import ChatRoom, ChatMessage
+from backend.users.models import User, OnlineUser
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        print('websocket is success to connect with his client')
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f'chat_{self.room_name}'
+	def getUser(self, userId):
+		return User.objects.get(id=userId)
 
-        try:
-            room = await sync_to_async(ChatRoom.objects.prefetch_related('members').get)(name=self.room_name)
-            if not room.members.filter(id=self.scope['user'].id).exists():
-                await self.close()
-                return
+	def getOnlineUsers(self):
+		onlineUsers = OnlineUser.objects.all()
+		return [onlineUser.user.id for onlineUser in onlineUsers]
 
-            await self.channel_layer.group_add(
-                self.room_group_name,
-                self.channel_name
-            )
+	def addOnlineUser(self, user):
+		try:
+			OnlineUser.objects.create(user=user)
+		except:
+			pass
 
-            await self.accept()
+	def deleteOnlineUser(self, user):
+		try:
+			OnlineUser.objects.get(user=user).delete()
+		except:
+			pass
 
-            unread_count = await self.get_total_unread_count(self.scope['user'].id)
-            await self.send(json.dumps({
-                'type': 'notification',
-                'unread_count': unread_count
-            }))
+	def saveMessage(self, message, userId, roomId):
+		userObj = User.objects.get(id=userId)
+		chatObj = ChatRoom.objects.get(roomId=roomId)
+		chatMessageObj = ChatMessage.objects.create(
+			chat=chatObj, user=userObj, message=message
+		)
+		return {
+			'action': 'message',
+			'user': userId,
+			'roomId': roomId,
+			'message': message,
+			'userImage': userObj.image.url,
+			'userName': userObj.first_name + " " + userObj.last_name,
+			'timestamp': str(chatMessageObj.timestamp)
+		}
 
-        except ObjectDoesNotExist:
-            await self.close()
-        except Exception as e:
-            print(f"Error during WebSocket connection: {e}")
-            await self.close()
+	async def sendOnlineUserList(self):
+		onlineUserList = await database_sync_to_async(self.getOnlineUsers)()
+		chatMessage = {
+			'type': 'chat_message',
+			'message': {
+				'action': 'onlineUser',
+				'userList': onlineUserList
+			}
+		}
+		await self.channel_layer.group_send('onlineUser', chatMessage)
 
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+	async def connect(self):
+		self.userId = self.scope['url_route']['kwargs']['userId']
+		self.userRooms = await database_sync_to_async(
+			list
+		)(ChatRoom.objects.filter(member=self.userId))
+		for room in self.userRooms:
+			await self.channel_layer.group_add(
+				room.roomId,
+				self.channel_name
+			)
+		await self.channel_layer.group_add('onlineUser', self.channel_name)
+		self.user = await database_sync_to_async(self.getUser)(self.userId)
+		await database_sync_to_async(self.addOnlineUser)(self.user)
+		await self.sendOnlineUserList()
+		await self.accept()
 
-    async def receive(self, text_data):
-        data = json.loads(text_data)
-        message = data.get('message')
-        user_id = self.scope['user'].id
-        message_type = data.get('type', 'chat')
+	async def disconnect(self, close_code):
+		await database_sync_to_async(self.deleteOnlineUser)(self.user)
+		await self.sendOnlineUserList()
+		for room in self.userRooms:
+			await self.channel_layer.group_discard(
+				room.roomId,
+				self.channel_name
+			)
 
-        try:
-            if message_type == 'chat':
-                message_instance = await self.save_message(self.room_name, user_id, message)
+	async def receive(self, text_data):
+		text_data_json = json.loads(text_data)
+		action = text_data_json['action']
+		roomId = text_data_json['roomId']
+		chatMessage = {}
+		if action == 'message':
+			message = text_data_json['message']
+			userId = text_data_json['user']
+			chatMessage = await database_sync_to_async(
+				self.saveMessage
+			)(message, userId, roomId)
+		elif action == 'typing':
+			chatMessage = text_data_json
+		await self.channel_layer.group_send(
+			roomId,
+			{
+				'type': 'chat_message',
+				'message': chatMessage
+			}
+		)
 
-                await sync_to_async(message_saved.send)(
-                    sender=self.__class__, room=message_instance.room, user=message_instance.sender
-                )
-
-                serialized_message = MessageSerializer(message_instance).data
-
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'chat_message',
-                        'message': serialized_message
-                    }
-                )
-
-                update_unread_counts.delay(room_name=self.room_name)
-
-            elif message_type == 'system':
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'system_notification',
-                        'message': message
-                    }
-                )
-
-            elif message_type == 'typing':
-                typing_status = data.get('status', False)
-                user_name = self.scope['user'].get_full_name()
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'typing_indicator',
-                        'user': user_name,
-                        'status': typing_status
-                    }
-                )
-
-        except ObjectDoesNotExist:
-            await self.send(json.dumps({
-                'type': 'error',
-                'message': 'Room or user does not exist.'
-            }))
-        except Exception as e:
-            print(f"Unexpected error in receive: {e}")
-            await self.send(json.dumps({'type': 'error', 'message': 'An unexpected error occurred.'}))
-
-    async def chat_message(self, event):
-        await self.send(text_data=json.dumps({
-            'message': event['message']
-        }))
-
-    async def system_notification(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'system',
-            'message': event['message']
-        }))
-
-    async def typing_indicator(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'typing',
-            'user': event['user'],
-            'status': event['status']
-        }))
-
-    @sync_to_async
-    def save_message(self, room_name, user_id, message):
-        try:
-            with transaction.atomic():
-                user = User.objects.get(id=user_id)
-                room = ChatRoom.objects.get(name=room_name)
-                message_instance = Message.objects.create(
-                    sender=user,
-                    room=room,
-                    content=message
-                )
-
-                unread_statuses = [
-                    UserMessageStatus(
-                        user=participant,
-                        message=message_instance,
-                        is_read=False
-                    )
-                    for participant in room.members.exclude(id=user_id)
-                ]
-                UserMessageStatus.objects.bulk_create(unread_statuses)
-
-                send_notification_to_group.delay(
-                    room_name=self.room_name,
-                    message_id=message_instance.id
-                )
-
-                return message_instance
-
-        except (ObjectDoesNotExist, DatabaseError) as e:
-            print(f"Error saving message: {e}")
-            raise
-
-    @sync_to_async
-    def mark_message_as_read(self, user_id, message_id):
-        try:
-            with transaction.atomic():
-                status = UserMessageStatus.objects.get(user_id=user_id, message_id=message_id)
-                status.is_read = True
-                status.save()
-
-                cache_key = f'unread_count_{user_id}'
-                unread_count = UserMessageStatus.objects.filter(user_id=user_id, is_read=False).count()
-                async_to_sync(cache_utility.set)(cache_key, unread_count, timeout=3600)
-
-        except ObjectDoesNotExist:
-            pass
-
-    @sync_to_async
-    def get_total_unread_count(self, user_id):
-        cache_key = f'unread_count_{user_id}'
-        unread_count = async_to_sync(cache_utility.get)(cache_key)
-        if unread_count is None:
-            unread_count = UserMessageStatus.objects.filter(user_id=user_id, is_read=False).count()
-            async_to_sync(cache_utility.set)(cache_key, unread_count, timeout=3600)
-        return unread_count
-
-
-@receiver(message_saved)
-def handle_message_saved(sender, room, user, **kwargs):
-    print(f"Message saved in room {room} by user {user}")
-
-
-@receiver(message_read)
-def handle_message_read(sender, user, message, **kwargs):
-    print(f"Message {message} read by user {user}")
+	async def chat_message(self, event):
+		message = event['message']
+		await self.send(text_data=json.dumps(message))
