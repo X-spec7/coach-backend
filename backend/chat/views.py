@@ -107,7 +107,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from django.db import models
 from .serializers import MessageSerializer
-from .models import Message
+from backend.chat.models import Message
 
 class MessageListView(ListAPIView):
   serializer_class = MessageSerializer
