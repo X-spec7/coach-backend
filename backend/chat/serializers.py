@@ -6,10 +6,11 @@ from backend.users.models import User
 class GetUserSerializer(serializers.ModelSerializer):
     avatarUrl = serializers.SerializerMethodField()
     fullName = serializers.CharField(source="full_name")
+    userType = serializers.CharField(source="user_type")
 
     class Meta:
         model = User
-        fields = ["id", "fullName", "avatarUrl"]
+        fields = ["id", "fullName", "avatarUrl", "userType"]
 
     def get_avatarUrl(self, obj):
         if obj.avatar_image:
