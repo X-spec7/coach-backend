@@ -14,6 +14,7 @@ class Message(models.Model):
     return f"From {self.sender} to {self.recipient}: {self.content[:20]}"
 
   class Meta:
+    app_label = "chat"
     verbose_name = _("Message")
     verbose_name_plural = _("Messages")
 
@@ -31,6 +32,7 @@ class Contact(models.Model):
           condition=Q(user_one__lt=F('user_two'))  # Ensures only one direction is valid
       )
     ]
+    app_label = "chat"
     verbose_name = _("Contact")
     verbose_name_plural = _("Contacts")
 
