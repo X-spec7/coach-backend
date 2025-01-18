@@ -23,7 +23,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ["id", "content", "isRead", "sentDate"]
+        fields = ["id", "content", "isRead", "isSent", "sentDate"]
     
     def get_isSent(self, obj):
         """Determine if the message was sent by the request user."""

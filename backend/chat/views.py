@@ -48,6 +48,8 @@ class UsersListView(APIView):
   authentication_classes = [JWTAuthentication]
 
   def get(self, request):
+    print(f"request: {request.query_params}")
+
     serializer = GetUsersListDTO(data=request.query_params)
 
     if not serializer.is_valid():
@@ -65,8 +67,12 @@ class UsersListView(APIView):
     try:
       userlists_query = User.objects.all()
 
+      print(f"user list count: {userlists_query.count()}")
+
       if query:
         userlists_query = userlists_query.filter(title__icontains=query)
+
+      print(f"user list count: {userlists_query.count()}")
       
       total_users = userlists_query.count()
 
@@ -97,13 +103,44 @@ class UsersListView(APIView):
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
     
+from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
+from django.db import models
+from .serializers import MessageSerializer
+from .models import Message
+
 class MessageListView(ListAPIView):
   serializer_class = MessageSerializer
 
   def get_queryset(self):
     user = self.request.user
     other_person_id = self.kwargs["otherPersonId"]
-    return Message.objects.filter(
+
+    queryset = Message.objects.filter(
       (models.Q(sender=user) & models.Q(recipient_id=other_person_id)) |
       (models.Q(sender_id=other_person_id) & models.Q(recipient=user))
     ).order_by("-timestamp")
+    return queryset
+
+  def list(self, request, *args, **kwargs):
+    
+    queryset = self.get_queryset()
+
+    offset = int(request.query_params.get("offset", 0))
+    limit = int(request.query_params.get("limit", 20))
+
+    paginated_queryset = queryset[offset : offset + limit]
+
+    serializer = self.get_serializer(paginated_queryset, many=True)
+
+    response_data = {
+      "count": queryset.count(),
+      "offset": offset,
+      "limit": limit,
+      "results": serializer.data,
+    }
+
+    return Response(
+      {"message": "Message fetched successfully", "messages": response_data},
+      status=status.HTTP_200_OK
+    )

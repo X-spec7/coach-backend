@@ -24,7 +24,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_typing_status(content)
 
     async def handle_send_message(self, content):
-        recipient_id = content.get("recipient_id")
+        recipient_id = content.get("recipientId")
         message = content.get("message")
         recipient = await sync_to_async(User.objects.get)(id=recipient_id)
         new_message = await sync_to_async(Message.objects.create)(
@@ -41,6 +41,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                     "id": new_message.id,
                     "content": new_message.content,
                     "isRead": new_message.is_read,
+                    "recipientId": recipient_id,
                     "sentDate": new_message.timestamp.isoformat(),
                 },
             },
