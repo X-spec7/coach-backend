@@ -4,6 +4,7 @@ from django.db.models import CharField, EmailField
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from shortuuidfield import ShortUUIDField
 
 from .managers import UserManager
 
@@ -47,6 +48,7 @@ class User(AbstractUser):
         ("Client", _("Client")),
     ]
 
+    userId = ShortUUIDField()
     full_name = CharField(_("Full Name"), max_length=255, default="John Doe")
     first_name = CharField(_("First Name"), max_length=255, default="John")
     last_name = CharField(_("Last Name"), max_length=255, default="Doe")
@@ -99,3 +101,10 @@ class UserQualification(models.Model):
     
     class Meta:
         unique_together = ('user', 'qualification')
+
+
+class OnlineUser(models.Model):
+	user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+	def __str__(self):
+		return self.user.username
