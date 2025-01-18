@@ -48,7 +48,6 @@ class UsersListView(APIView):
   authentication_classes = [JWTAuthentication]
 
   def get(self, request):
-    print(f"request: {request.query_params}")
 
     serializer = GetUsersListDTO(data=request.query_params)
 
@@ -67,12 +66,8 @@ class UsersListView(APIView):
     try:
       userlists_query = User.objects.all()
 
-      print(f"user list count: {userlists_query.count()}")
-
       if query:
-        userlists_query = userlists_query.filter(title__icontains=query)
-
-      print(f"user list count: {userlists_query.count()}")
+        userlists_query = userlists_query.filter(full_name__icontains=query)
       
       total_users = userlists_query.count()
 
@@ -102,13 +97,6 @@ class UsersListView(APIView):
         {"error": "Failed to fetch session data", "detail": (e)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
-    
-from rest_framework.generics import ListAPIView
-from rest_framework.response import Response
-from django.db import models
-from .serializers import MessageSerializer
-from backend.chat.models import Message
-
 class MessageListView(ListAPIView):
   serializer_class = MessageSerializer
 
