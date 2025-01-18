@@ -91,8 +91,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "backend.users",
     "backend.meetapp",
-    "backend.session",
-    "chat",
+    "backend.chat",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -321,19 +320,23 @@ SIMPLE_JWT = {
     # token expiration times
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    # token rotation options
+    # 'ROTATE_REFRESH_TOKENS': False,
+    # 'BLACKLIST_AFTER_ROTATION': False,
+    # user authentication options
     "AUTH_HEADER_TYPES": ("Bearer",),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'AUTH_TOKEN_CLASSES': (
-        'rest_framework_simplejwt.tokens.AccessToken',
-        'rest_framework_simplejwt.tokens.RefreshToken',
-    ),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-    'ALGORITHM': 'HS256',
+    # 'USER_ID_FIELD': 'id',
+    # 'USER_ID_CLAIM': 'user_id',
+    # 'AUTH_TOKEN_CLASSES': (
+    #     'rest_framework_simplejwt.tokens.AccessToken',
+    #     'rest_framework_simplejwt.tokens.RefreshToken',
+    # ),
+    # 'TOKEN_TYPE_CLAIM': 'token_type',
+    # token verification options
+    # 'ALGORITHM': 'HS256',
     # 'SIGNING_KEY': None,
     # 'VERIFYING_KEY': None,
+    # # token refresh options
     # 'ALLOW_REFRESH': True,
     # 'REFRESH_TOKEN_ROTATE_REFRESH_TOKENS': False,
     # 'REFRESH_TOKEN_BLACKLIST_AFTER_ROTATION': False,
@@ -345,7 +348,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [("localhost", 6379)],
+            "hosts": [('127.0.0.1', 6379)],
         },
     },
 }

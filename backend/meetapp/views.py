@@ -37,19 +37,12 @@ class CreateInstantMeetingView(APIView):
                 },
                 'user_id': "me"
             }
+            response = create_zoom_meeting(data)
 
-            try:
-                response = create_zoom_meeting(data)
-
-                return Response(
-                    {"message": "Meeting scheduled", 'data': response},
-                    status.HTTP_201_CREATED
-                )
-            except Exception as e:
-                return Response(
-                    {"error": "Failed to schedule meeting", "detail": str(e)},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            return Response(
+                {"message": "Meeting scheduled", 'res': response},
+                status.HTTP_201_CREATED
+            )
         except Exception as e:
             print(e)
             return Response(
@@ -93,7 +86,7 @@ class MeetingAuthorizationView(APIView):
 
     def post(self, request, format=None):
         try:
-            serializer = MeetingAuthorizationRequestDTO(data=request.data)
+            serializer = CreateSessionRequestDTO(data=request.data)
 
             if not serializer.is_valid():
                 return Response(
@@ -102,11 +95,11 @@ class MeetingAuthorizationView(APIView):
                 )
             
             validated_data = serializer.validated_data
-            meeting_number = validated_data["meeting_number"]
+            zoom_id = validated_data["meeting_id"]
             role = validated_data["role"]
 
-            response = create_auth_signature(meeting_number, role)
-            response["meeting_number"] = meeting_number
+            response = create_auth_signature(zoom_id, role)
+            response["zoom_id"] = zoom_id
             
             return Response(response, status.HTTP_200_OK)
         
