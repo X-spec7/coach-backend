@@ -1,15 +1,29 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.utils.timezone import now
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, database_sync_to_async
 from backend.chat.models import Message, Contact
 from backend.users.models import User
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
-        self.user = self.scope['user']
-        if self.user.is_authenticated:
-            await self.channel_layer.group_add(f"user_{self.user.id}", self.channel_name)
+        self.userId = self.scope['url_route']['kwargs']['userId']
+        try:
+            self.user = await database_sync_to_async(User.objects.get)(user_id=self.userId)
+
+            # Add the WebSocket connection to the user's group
+            await self.channel_layer.group_add(
+                f"user_{self.user.id}",
+                self.channel_name
+            )
+
+            # Accept the WebSocket connection
             await self.accept()
+
+            # Set the user's status to "online"
             await self.set_user_status("online")
+
+        except User.DoesNotExist:
+            # Close the connection if the user does not exist
+            await self.close()
 
     async def disconnect(self, close_code):
         if self.user.is_authenticated:

@@ -1,4 +1,5 @@
 from typing import ClassVar
+import uuid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db.models import CharField, EmailField
 from django.utils.timezone import now
@@ -48,6 +49,12 @@ class User(AbstractUser):
         ("Client", _("Client")),
     ]
 
+    user_id = models.UUIDField(
+        _("UUID"),
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
     full_name = CharField(_("Full Name"), max_length=255, default="John Doe")
     first_name = CharField(_("First Name"), max_length=255, default="John")
     last_name = CharField(_("Last Name"), max_length=255, default="Doe")
