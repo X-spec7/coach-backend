@@ -19,7 +19,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend.users.models import User, Qualification
 
-from .serializers import UserSerializer, LoginSerializer
+from .serializers import UserSerializer, LoginSerializer, UserSearchSerializer
 
 def send_mail(email, content):
     apiKey = os.getenv("ELASTIC_API_KEY")
@@ -408,3 +408,40 @@ class UpdateProfileView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Q
+from .serializers import UserSerializer
+
+class UserSearchView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        print("getting query params----->", dir(request))
+        query = request.query_params.get('search', '')
+
+        if not query:
+            return Response(
+                {"error": "Search query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        users = User.objects.filter(
+            Q(full_name__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        )
+        
+        result = []
+        for user in users:
+            result.append({
+                "id": user.id,
+                "name": user.full_name,
+                "avatar_image_url": f"{settings.MEDIA_URL}{user.avatar_image}" if user.avatar_image else None
+            })
+
+        # Serialize the filtered user data
+        
+        return Response(result, status=status.HTTP_200_OK)

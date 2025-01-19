@@ -5,7 +5,6 @@ from django.conf import settings
 
 class UserForChatSerializer(serializers.ModelSerializer):
     avatar_image_url = serializers.SerializerMethodField()
-    banner_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -14,11 +13,6 @@ class UserForChatSerializer(serializers.ModelSerializer):
     def get_avatar_image_url(self, obj):
         if obj.avatar_image:
             return f"{settings.MEDIA_URL}{obj.avatar_image}"
-        return None
-    
-    def get_banner_image_url(self, obj):
-        if obj.banner_image:
-            return f"{settings.MEDIA_URL}{obj.banner_image}"
         return None
     
 class ChatRoomSerializer(serializers.ModelSerializer):
