@@ -9,10 +9,12 @@ https://docs.djangoproject.com/en/dev/howto/deployment/asgi/
 """
 
 import os
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
 import sys
 from pathlib import Path
-
-from django.core.asgi import get_asgi_application
+import backend.chat.routing
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 sys.path.append(str(BASE_DIR / "backend"))
@@ -21,20 +23,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 
 django_application = get_asgi_application()
 
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.security.websocket import AllowedHostsOriginValidator
-# from .tokenauth_middleware import TokenAuthMiddleware
-from channels.auth import AuthMiddlewareStack
-from chat import routing
-
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-            URLRouter(
-                routing.websocket_urlpatterns
-            )
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            backend.chat.routing.websocket_urlpatterns
         )
     ),
 })
