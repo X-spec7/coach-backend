@@ -32,6 +32,7 @@ class MessageSerializer(serializers.ModelSerializer):
         return obj.sender == request_user
 
 class ContactUserSerializer(serializers.ModelSerializer):
+    id = serializers.SerializerMethodField()
     avatarUrl = serializers.SerializerMethodField()
     fullName = serializers.SerializerMethodField()
     userType = serializers.SerializerMethodField()
@@ -41,6 +42,10 @@ class ContactUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = ["id", "fullName", "avatarUrl", "userType", "unreadCount", "lastMessage"]
+
+    def get_id(self, obj):
+        request_user = self.context.get("request_user")
+        return obj.user_two.id if obj.user_one == request_user else obj.user_one.id
 
     def get_other_person(self, obj):
         request_user = self.context.get("request_user")
