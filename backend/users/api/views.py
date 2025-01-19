@@ -13,6 +13,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_ratelimit.decorators import ratelimit
+from django.db.models import Q
+from .serializers import UserSerializer
 
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -408,13 +410,7 @@ class UpdateProfileView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.db.models import Q
-from .serializers import UserSerializer
+        
 
 class UserSearchView(APIView):
 
