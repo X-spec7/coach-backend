@@ -105,9 +105,10 @@ class MessageListView(ListAPIView):
     other_person_id = self.kwargs["otherPersonId"]
 
     queryset = Message.objects.filter(
-      (models.Q(sender=user) & models.Q(recipient_id=other_person_id)) |
-      (models.Q(sender_id=other_person_id) & models.Q(recipient=user))
+      (models.Q(sender=user.id) & models.Q(recipient=other_person_id)) |
+      (models.Q(sender=other_person_id) & models.Q(recipient=user.id))
     ).order_by("-timestamp")
+
     return queryset
 
   def list(self, request, *args, **kwargs):
