@@ -49,7 +49,7 @@ class User(AbstractUser):
         ("Client", _("Client")),
     ]
 
-    user_id = models.UUIDField(
+    uuid = models.UUIDField(
         _("UUID"),
         default=uuid.uuid4,
         editable=False,
