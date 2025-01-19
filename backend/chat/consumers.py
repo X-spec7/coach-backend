@@ -1,15 +1,26 @@
+import json
+import re
 from channels.generic.websocket import AsyncWebsocketConsumer, WebsocketConsumer
+
 from channels.db import database_sync_to_async
 from django.utils.timezone import now
-from asgiref.sync import sync_to_async, async_to_sync
 from backend.chat.models import Message, Contact
 from backend.users.models import User
+from asgiref.sync import async_to_sync
+
+def sanitize_group_name(name: str) -> str:
+    # Replace all invalid characters with an underscore
+    return re.sub(r"[^a-zA-Z0-9_\-.]", "_", name)[:100]
+
 class ChatConsumer(WebsocketConsumer):
     def connect(self):
         user_id = self.scope['url_route']['kwargs']['userId']
         user = User.objects.get(id=user_id)
+        self.user = user
+
+        self.group_name = sanitize_group_name(f"group_{user.uuid}")
         async_to_sync (self.channel_layer.group_add)(
-            str(user.uuid),
+            self.group_name,
             self.channel_name
         )
 
@@ -20,7 +31,8 @@ class ChatConsumer(WebsocketConsumer):
         #     await self.channel_layer.group_discard(f"user_{self.user.id}", self.channel_name)
         #     await self.set_user_status("offline")
 
-    def receive(self, data):
+    def receive(self, text_data):
+        data = json.loads(text_data)
         message_type = data.get("type")
         if message_type == "send_message":
             self.handle_send_message(data)
@@ -34,11 +46,16 @@ class ChatConsumer(WebsocketConsumer):
         new_message = Message.objects.create(
             sender=self.user, recipient=recipient, content=message
         )
+        print("updating contact")
         # Update contact last message and unread count
         self.update_contact(new_message)
 
+        group_name = sanitize_group_name(f"group_{recipient.uuid}")
+
+        print("sending")
+
         async_to_sync (self.channel_layer.group_send)(
-            recipient.uuid,
+            group_name,
             {
                 "type": "chat_message",
                 "message": {
@@ -50,6 +67,8 @@ class ChatConsumer(WebsocketConsumer):
                 },
             },
         )
+
+        print("sent")
 
     # def handle_typing_status(self, content):
     #     recipient_id = content.get("recipient_id")

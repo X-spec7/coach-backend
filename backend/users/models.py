@@ -9,7 +9,6 @@ from django.utils.translation import gettext_lazy as _
 
 from .managers import UserManager
 
-
 class EncryptedUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -49,12 +48,8 @@ class User(AbstractUser):
         ("Client", _("Client")),
     ]
 
-    uuid = models.UUIDField(
-        _("UUID"),
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-    )
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
     full_name = CharField(_("Full Name"), max_length=255, default="John Doe")
     first_name = CharField(_("First Name"), max_length=255, default="John")
     last_name = CharField(_("Last Name"), max_length=255, default="Doe")

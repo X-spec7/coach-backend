@@ -15,8 +15,10 @@ SECRET_KEY = env(
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "176.9.82.59", "5.9.85.28", "23.131.24.126", "google.com"]  # noqa: S104
-
+CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://0.0.0.0", "http://127.0.0.1", "http://5.9.85.28", "http://localhost:3000", "http://0.0.0.0:3000", "http://127.0.0.1:3000", "http://5.9.85.28:3000"]
 # CORS_ORIGIN_WHITELIST = ["http://localhost:3000", "http://localhost:3001", "http://176.9.82.59:3000", "http://127.0.0.1:3000"]
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 
 CORS_ALLOW_ALL_ORIGINS = True
 
