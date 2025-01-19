@@ -29,7 +29,7 @@ class Contact(models.Model):
       UniqueConstraint(
           fields=['user_one', 'user_two'],
           name='unique_contact_pair',
-          condition=Q(user_one__lt=F('user_two'))  # Ensures only one direction is valid
+          condition=Q(user_one__lt=F('user_two'))
       )
     ]
     app_label = "chat"
