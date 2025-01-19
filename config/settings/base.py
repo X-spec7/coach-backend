@@ -90,8 +90,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "backend.users",
-    "backend.meetapp",
     "backend.chat",
+    "backend.session",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
