@@ -31,7 +31,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
 class ChatMessageSerializer(serializers.ModelSerializer):
 	userName = serializers.SerializerMethodField()
-	userImage = serializers.ImageField(source='user.image')
+	userImage = serializers.ImageField(source='user.avatar_image')
 
 	class Meta:
 		model = ChatMessage
