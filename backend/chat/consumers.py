@@ -35,7 +35,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 			'user': userId,
 			'roomId': roomId,
 			'message': message,
-			'userImage': userObj.image.url,
+			'userImage': userObj.avatar_image.url,
 			'userName': userObj.first_name + " " + userObj.last_name,
 			'timestamp': str(chatMessageObj.timestamp)
 		}
