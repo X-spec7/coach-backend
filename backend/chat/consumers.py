@@ -46,29 +46,39 @@ class ChatConsumer(WebsocketConsumer):
         new_message = Message.objects.create(
             sender=self.user, recipient=recipient, content=message
         )
-        print("updating contact")
+
         # Update contact last message and unread count
         self.update_contact(new_message)
 
-        group_name = sanitize_group_name(f"group_{recipient.uuid}")
-
-        print("sending")
+        receiver_group_name = sanitize_group_name(f"group_{recipient.uuid}")
 
         async_to_sync (self.channel_layer.group_send)(
-            group_name,
+            receiver_group_name,
             {
                 "type": "chat_message",
                 "message": {
                     "id": new_message.id,
                     "content": new_message.content,
                     "isRead": new_message.is_read,
-                    "recipientId": recipient_id,
+                    "isSent": False,
                     "sentDate": new_message.timestamp.isoformat(),
                 },
             },
         )
 
-        print("sent")
+        async_to_sync (self.channel_layer.group_send)(
+            self.group_name,
+            {
+                "type": "chat_message",
+                "message": {
+                    "id": new_message.id,
+                    "content": new_message.content,
+                    "isRead": new_message.is_read,
+                    "isSent": True,
+                    "sentDate": new_message.timestamp.isoformat(),
+                },
+            },
+        )
 
     def update_contact(self, message):
         # Ensure user_one is the smaller ID and user_two is the larger ID
@@ -100,20 +110,11 @@ class ChatConsumer(WebsocketConsumer):
 
         message = event['message']
         print(f"event ------> {event}")
-        # sender = event['sender']
 
-        # if sender != self.channel_name:
         self.send(text_data=json.dumps({
-            'type': 'chat_message',
+            'type': 'chat',
             'message': message
         }))
-        # async_to_sync (self.channel_layer.group_send)(
-        #     self.group_name,
-        #     {
-        #         "type": "chat_message",
-        #         "message": message
-        #     },
-        # )
 
     # def handle_typing_status(self, content):
     #     recipient_id = content.get("recipient_id")
