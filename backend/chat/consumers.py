@@ -70,27 +70,6 @@ class ChatConsumer(WebsocketConsumer):
 
         print("sent")
 
-    # def handle_typing_status(self, content):
-    #     recipient_id = content.get("recipient_id")
-    #     is_typing = content.get("is_typing", False)
-
-    #     # Notify the recipient of typing status
-    #     self.channel_layer.group_send(
-    #         f"user_{recipient_id}",
-    #         {
-    #             "type": "typing_status",
-    #             "user_id": self.user.id,
-    #             "is_typing": is_typing,
-    #         },
-    #     )
-
-    # def typing_status(self, event):
-    #     self.send_json({
-    #         "type": "typing_status",
-    #         "user_id": event["user_id"],
-    #         "is_typing": event["is_typing"],
-    #     })
-
     def update_contact(self, message):
         # Ensure user_one is the smaller ID and user_two is the larger ID
         user_one, user_two = (
@@ -116,10 +95,53 @@ class ChatConsumer(WebsocketConsumer):
                 contact.unread_count += 1
             contact.save()
 
+
+    def chat_message(self, event):
+
+        message = event['message']
+        print(f"event ------> {event}")
+        # sender = event['sender']
+
+        # if sender != self.channel_name:
+        self.send(text_data=json.dumps({
+            'type': 'chat_message',
+            'message': message
+        }))
+        # async_to_sync (self.channel_layer.group_send)(
+        #     self.group_name,
+        #     {
+        #         "type": "chat_message",
+        #         "message": message
+        #     },
+        # )
+
+    # def handle_typing_status(self, content):
+    #     recipient_id = content.get("recipient_id")
+    #     is_typing = content.get("is_typing", False)
+
+    #     # Notify the recipient of typing status
+    #     self.channel_layer.group_send(
+    #         f"user_{recipient_id}",
+    #         {
+    #             "type": "typing_status",
+    #             "user_id": self.user.id,
+    #             "is_typing": is_typing,
+    #         },
+    #     )
+
+    # def typing_status(self, event):
+    #     self.send_json({
+    #         "type": "typing_status",
+    #         "user_id": event["user_id"],
+    #         "is_typing": event["is_typing"],
+    #     })
+
+
     # def set_user_status(self, status):
     #     self.user.status = status
     #     self.user.last_seen = now()
     #     self.user.save()
 
     # def chat_message(self, event):
-    #     self.send_json(event["message"])
+    #     print("sending back")
+    #     self.send(event["message"])
