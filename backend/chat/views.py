@@ -125,7 +125,7 @@ class MessageListView(ListAPIView):
     )
 
     response_data = {
-      "count": queryset.count(),
+      "totalMessageCount": queryset.count(),
       "offset": offset,
       "limit": limit,
       "messages": serializer.data,
