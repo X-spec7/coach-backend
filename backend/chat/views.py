@@ -126,10 +126,10 @@ class MessageListView(ListAPIView):
       "count": queryset.count(),
       "offset": offset,
       "limit": limit,
-      "results": serializer.data,
+      "messages": serializer.data,
     }
 
     return Response(
-      {"message": "Message fetched successfully", "messages": response_data},
+      {"message": "Message fetched successfully", "data": response_data},
       status=status.HTTP_200_OK
     )
