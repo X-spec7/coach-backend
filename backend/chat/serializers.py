@@ -29,7 +29,8 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_isSent(self, obj):
         """Determine if the message was sent by the request user."""
         request_user = self.context.get("request_user")
-        return obj.sender == request_user
+        is_sent =  obj.sender.id == request_user.id
+        return is_sent
 
 class ContactUserSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()

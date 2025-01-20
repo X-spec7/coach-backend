@@ -120,7 +120,9 @@ class MessageListView(ListAPIView):
 
     paginated_queryset = queryset[offset : offset + limit]
 
-    serializer = self.get_serializer(paginated_queryset, many=True)
+    serializer = self.get_serializer(
+      paginated_queryset, many=True, context={"request_user": request.user}
+    )
 
     response_data = {
       "count": queryset.count(),
