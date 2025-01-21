@@ -110,43 +110,42 @@ class RegisterView(APIView):
                                 email,
                                 f"{os.getenv('FRONT_URL')}/mail-verify/?token={str(refresh.access_token)}",
                             )
-                            print('response in send mail: ', response)
                             if response.status_code == 200:
                                 return Response(
                                     {
-                                        "success": "User created successfully and sent verification link."
+                                        "message": "User created successfully and sent verification link."
                                     },
                                     status=status.HTTP_201_CREATED,
                                 )
                             else:
                                 return Response(
-                                    {"success": "Resend verification link."},
+                                    {"message": "Resend verification link."},
                                     status=status.HTTP_201_CREATED,
                                 )
                         else:
                             return Response(
-                                {"error": "Something went wrong creating user"},
+                                {"message": "Something went wrong creating user"},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             )
                     else:
                         return Response(
-                            {"error": "Username already exists"},
+                            {"message": "Username already exists"},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                 else:
                     return Response(
-                        {"error": "Password must be at least 6 characters long"},
+                        {"message": "Password must be at least 6 characters long"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
             else:
                 return Response(
-                    {"error": "Passwords do not match"},
+                    {"message": "Passwords do not match"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         except Exception as e:
             print(e)
             return Response(
-                {"error": "Something went wrong"},
+                {"message": "Something went wrong"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -175,28 +174,23 @@ class LoginView(APIView):
                     refresh = RefreshToken.for_user(user)
                     return Response(
                         {
-                            "status": {
-                                "type": "success",
-                                "message": "Welcome back! You have successfully logged in.",
-                            },
-                            "result": {
-                                "token": str(refresh.access_token),
-                                "user": userSerializer.data,
-                            },
-                            "navigate": "/home",
+                            "message": "Successfully Logged in",
+                            "token": str(refresh.access_token),
+                            "user": userSerializer.data,
                         },
+                        status=status.HTTP_200_OK
                     )
                 else:
                     return Response(
                         {
-                            "error": "Email not verified",
+                            "message": "Email not verified",
                         },
                         status=status.HTTP_401_UNAUTHORIZED,
                     )
             else:
                 return Response(
                     {
-                        "error": "Invalid email or password",
+                        "message": "Invalid email or password",
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -204,7 +198,7 @@ class LoginView(APIView):
             return Response(serializer.error_messages)
 
 
-class GetUserView(APIView):
+class GetUserProfileView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -213,6 +207,7 @@ class GetUserView(APIView):
 
         return Response(
             {
+                "message": "Successfully fetched user profile",
                 "user": UserSerializer(user).data,
             },
             status=status.HTTP_200_OK,
@@ -295,15 +290,10 @@ class UpdateProfileView(APIView):
             userSerializer = UserSerializer(user)
             return Response(
                 {
-                    "status": {
-                        "type": "success",
-                        "message": "Profile Updated successfully.",
-                    },
-                    "result": {
-                        "user": userSerializer.data,
-                    },
-                    "navigate": "/home",
+                    "message": "Profile Updated successfully.",
+                    "user": userSerializer.data,
                 },
+                status=status.HTTP_200_OK
             )
 
         except Exception as e:
