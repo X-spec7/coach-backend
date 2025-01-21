@@ -1,7 +1,6 @@
 import os
 import requests
 import base64
-from django.core.files.base import ContentFile
 from django.contrib.auth import authenticate, login
 from rest_framework import status, permissions
 from rest_framework.decorators import action
@@ -15,7 +14,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_ratelimit.decorators import ratelimit
 
 from django.conf import settings
-from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend.users.models import User, Qualification
 
@@ -160,50 +158,6 @@ class MailVerifyView(APIView):
         user.save()
         return Response({"success": "Email verified"}, status=status.HTTP_200_OK)
 
-
-class ForgetPasswordView(APIView):
-    permission_classes = [AllowAny,]
-    authentication_classes = ()
-
-    def post(self, request):
-        email = request.data["email"]
-        try:
-            user = User.objects.get(email=email)
-            refresh = RefreshToken.for_user(user)
-            response = send_mail(
-                email,
-                f"{os.getenv('FRONT_URL')}/reset-password/?token={str(refresh.access_token)}",
-            )
-            if response.status_code == 200:
-                return Response(
-                    {"success": "sent verification link."},
-                    status=status.HTTP_201_CREATED,
-                )
-            else:
-                return Response(
-                    {"success": "Resend verification link."},
-                    status=status.HTTP_201_CREATED,
-                )
-        except Exception as e:
-            print(e)
-            return Response(
-                {"error": "user does not exist"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-
-class ResetPasswordView(APIView):
-    def post(self, request):
-        user = request.user
-        password = request.data["password"]
-        confirm_password = request.data["confirmPassword"]
-        if password == confirm_password:
-            user.password = password
-            user.save()
-            return Response({"success": "reset password"}, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "password not matched"})
-
-
 class LoginView(APIView):
     permission_classes = [AllowAny,]
     authentication_classes = ()
@@ -263,36 +217,6 @@ class GetUserView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
-class GetUserInfo(APIView):
-    def post(self, request):
-        # Retrieve all users from the database
-        all_users = User.objects.all()
-
-        # Extract relevant information (username and email) from each user object
-        users_info = [
-            {"username": user.full_name, "email": user.email} for user in all_users
-        ]
-
-        return Response({"user": users_info}, status=status.HTTP_200_OK)
-
-
-class loginWithGoogle(APIView):
-    permission_classes = [AllowAny,]
-    authentication_classes = ()
-
-    def post(self, request):
-        name = request.data.get("name")
-        email = request.data.get("email")
-
-        # Check if the user already exists
-        user, created = User.objects.get_or_create(full_name=name, email=email)
-        if created:
-            user.full_name = name
-            user.mail_verify = True
-            user.save()
-
-        return Response("User saved successfully", status=status.HTTP_200_OK)
     
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
