@@ -1,4 +1,4 @@
-DB_URL=postgresql://root:secret@localhost:5432/coach?sslmode=disable
+DB_URL=postgresql://root:secret@localhost:5432/qb?sslmode=disable
 
 pip-install-base:
 	pip3 install -r requirements/base.txt
@@ -19,10 +19,10 @@ remove-postgres:
 	docker rm -f postgres15
 
 create-database:
-	docker exec -it postgres15 createdb --username=root --owner=root coach
+	docker exec -it postgres15 createdb --username=root --owner=root qb
 
 drop-database:
-	docker exec -it postgres15 dropdb coach
+	docker exec -it postgres15 dropdb qb
 
 migrations:
 	python3 manage.py makemigrations
