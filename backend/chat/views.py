@@ -97,6 +97,7 @@ class UsersListView(APIView):
         {"error": "Failed to fetch session data", "detail": (e)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
+    
 class MessageListView(ListAPIView):
   serializer_class = MessageSerializer
 
@@ -112,11 +113,22 @@ class MessageListView(ListAPIView):
     return queryset
 
   def list(self, request, *args, **kwargs):
+    other_person_id = self.kwargs["otherPersonId"]
     
     queryset = self.get_queryset()
 
     offset = int(request.query_params.get("offset", 0))
     limit = int(request.query_params.get("limit", 20))
+
+    try:
+      other_person = User.objects.get(id=other_person_id)
+    except User.DoesNotExist:
+      return Response(
+          {"message": "Other person not found."},
+          status=status.HTTP_404_NOT_FOUND,
+      )
+
+    other_person_data = GetUserSerializer(other_person).data
 
     paginated_queryset = queryset[offset : offset + limit]
 
@@ -126,9 +138,9 @@ class MessageListView(ListAPIView):
 
     response_data = {
       "totalMessageCount": queryset.count(),
-      "offset": offset,
-      "limit": limit,
       "messages": serializer.data,
+      "otherPersonFullname": other_person_data.get("fullName"),
+      "otherPersonAvatarUrl": other_person_data.get("avatarUrl"),
     }
 
     return Response(
