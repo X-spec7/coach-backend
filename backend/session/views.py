@@ -267,7 +267,7 @@ class CreateSessionView(APIView):
       format, imgstr = bannerImageBase64.split(';base64,')
       ext = format.split('/')[-1]
       if max_session_id is not None:
-        file_name = f"{max_session_id}_session_banner.{ext}"
+        file_name = f"{max_session_id + 1}_session_banner.{ext}"
       else:
         file_name = f"1_session_banner.{ext}"
       file_path = os.path.join(settings.MEDIA_ROOT, 'session_banner_images', file_name)

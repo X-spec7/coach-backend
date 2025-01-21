@@ -13,15 +13,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_ratelimit.decorators import ratelimit
-from django.db.models import Q
-from .serializers import UserSerializer
 
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend.users.models import User, Qualification
 
-from .serializers import UserSerializer, LoginSerializer, UserSearchSerializer
+from .serializers import UserSerializer, LoginSerializer
 
 def send_mail(email, content):
     apiKey = os.getenv("ELASTIC_API_KEY")
@@ -61,30 +59,6 @@ def send_mailgun_mail(to_mail, content):
 
     except Exception as ex:
         print(f"Mailgun error: {ex}")
-
-    # url = "https://api.postmarkapp.com/email"
-    # server_token = os.getenv("MAILGUN_KEY")
-
-    # # Define the email data
-    # email_data = {
-    #     "From": os.getenv("MAILGUN_REGISTERED_EMAIL"),
-    #     "To": to_mail,
-    #     "Subject": "Email Verification",
-    #     "TextBody": "Hey registering user.",
-    #     "HtmlBody": f"{content}",
-    #     "MessageStream": "outbound"
-    # }
-
-    # # Define headers
-    # headers = {
-    #     "Accept": "application/json",
-    #     "Content-Type": "application/json",
-    #     "X-Postmark-Server-Token": server_token,
-    # }
-
-    # response = requests.post(url, json=email_data, headers=headers)
-    # return response
-
 
 class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericViewSet):
     serializer_class = UserSerializer
@@ -410,34 +384,3 @@ class UpdateProfileView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
-        
-
-class UserSearchView(APIView):
-
-    def get(self, request, *args, **kwargs):
-        print("getting query params----->", dir(request))
-        query = request.query_params.get('search', '')
-
-        if not query:
-            return Response(
-                {"error": "Search query parameter is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        users = User.objects.filter(
-            Q(full_name__icontains=query) |
-            Q(first_name__icontains=query) |
-            Q(last_name__icontains=query)
-        )
-        
-        result = []
-        for user in users:
-            result.append({
-                "id": user.id,
-                "name": user.full_name,
-                "avatar_image_url": f"{settings.MEDIA_URL}{user.avatar_image}" if user.avatar_image else None
-            })
-
-        # Serialize the filtered user data
-        
-        return Response(result, status=status.HTTP_200_OK)

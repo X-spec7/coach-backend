@@ -22,19 +22,6 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.banner_image:
             return f"{settings.MEDIA_URL}{obj.banner_image}"
         return None
-    
-
-class UserSearchSerializer(serializers.ModelSerializer):
-    avatar_image_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ['id', 'full_name', 'avatar_image_url']
-
-    def get_avatar_image_url(self, obj):
-        if obj.avatar_image:
-            return f"{settings.MEDIA_URL}{obj.avatar_image}"
-        return None
 
 
 class LoginSerializer(serializers.Serializer):

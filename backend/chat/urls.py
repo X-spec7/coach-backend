@@ -1,8 +1,12 @@
 from django.urls import path
-from backend.chat.views import ChatRoomView, MessagesView
+from .views import (
+  ContactListView,
+  UsersListView,
+  MessageListView,
+)
 
 urlpatterns = [
-	path('chats/', ChatRoomView.as_view(), name='chatRoom'),
-	path('chats/<str:roomId>/messages/', MessagesView.as_view(), name='messageList'),
-	path('users/<int:userId>/chats/', ChatRoomView.as_view(), name='chatRoomList'),
+  path("contact/get/", view=ContactListView.as_view(), name="get_contact_users"),
+  path("messages/<int:otherPersonId>/", MessageListView.as_view(), name="message-list"),
+  path("users/search/", view=UsersListView.as_view(), name="search_users"),
 ]

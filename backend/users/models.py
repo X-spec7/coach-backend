@@ -1,13 +1,13 @@
 from typing import ClassVar
+import uuid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db.models import CharField, EmailField
+from django.utils.timezone import now
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from shortuuidfield import ShortUUIDField
 
 from .managers import UserManager
-
 
 class EncryptedUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -48,7 +48,8 @@ class User(AbstractUser):
         ("Client", _("Client")),
     ]
 
-    userId = ShortUUIDField()
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
     full_name = CharField(_("Full Name"), max_length=255, default="John Doe")
     first_name = CharField(_("First Name"), max_length=255, default="John")
     last_name = CharField(_("Last Name"), max_length=255, default="Doe")
@@ -77,6 +78,15 @@ class User(AbstractUser):
         _("Specialization"), max_length=255, blank=True, null=True
     )
 
+    status = models.CharField(
+        _("Status"),
+        max_length=50,
+        choices=[("online", _("Online")), ("offline", _("Offline"))],
+        default="offline",
+    )
+
+    last_seen = models.DateTimeField(_("Last Seen"), default=now)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
@@ -101,10 +111,3 @@ class UserQualification(models.Model):
     
     class Meta:
         unique_together = ('user', 'qualification')
-
-
-class OnlineUser(models.Model):
-	user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-	def __str__(self):
-		return self.user.username
