@@ -17,6 +17,7 @@ class ChatConsumer(WebsocketConsumer):
         user_id = self.scope['url_route']['kwargs']['userId']
         user = User.objects.get(id=user_id)
         self.user = user
+        self.user_id = user_id
 
         self.group_name = sanitize_group_name(f"group_{user.uuid}")
         async_to_sync (self.channel_layer.group_add)(
@@ -36,6 +37,16 @@ class ChatConsumer(WebsocketConsumer):
         message_type = data.get("type")
         if message_type == "send_message":
             self.handle_send_message(data)
+        elif message_type == "initiate_call":
+            self.handle_initiate_call(data)
+        elif message_type == "accept_call":
+            self.handle_accept_call(data)
+        elif message_type == "decline_call":
+            self.handle_decline_call(data)
+        elif message_type == "cancel_call":
+            self.handle_cancel_call(data)
+        elif message_type == "busy":
+            self.handle_busy(data)
         # elif message_type == "is_typing":
         #     await self.handle_typing_status(content)
 
@@ -80,6 +91,115 @@ class ChatConsumer(WebsocketConsumer):
             },
         )
 
+
+    def handle_initiate_call(self, data):
+        recipient_id = data.get("otherPersonId")
+        meeting_link = data.get("meetingLink")
+        other_person_avatar_url = data.get("otherPersonAvatarUrl")
+        other_person_name = data.get("otherPersonName")
+
+        recipient = User.objects.get(id=recipient_id)
+        receiver_group_name = sanitize_group_name(f"group_{recipient.uuid}")
+
+        async_to_sync (self.channel_layer.group_send)(
+            receiver_group_name,
+            {
+                "type": "initiate_call",
+                "callInfo": {
+                    "otherPersonId": self.user_id,
+                    "meetingLink": meeting_link,
+                    "otherPersonAvatarUrl": other_person_avatar_url,
+                    "otherPersonName": other_person_name,
+                },
+            }
+        )
+
+    def handle_accept_call(self, data):
+        recipient_id = data.get("otherPersonId")
+        recipient = User.objects.get(id=recipient_id)
+        receiver_group_name = sanitize_group_name(f"group_{recipient.uuid}")
+
+        async_to_sync (self.channel_layer.group_send)(
+            receiver_group_name,
+            {
+                "type": "accept_call"
+            }
+        )
+    
+    def handle_decline_call(self, data):
+        recipient_id = data.get("otherPersonId")
+        recipient = User.objects.get(id=recipient_id)
+        receiver_group_name = sanitize_group_name(f"group_{recipient.uuid}")
+
+        async_to_sync (self.channel_layer.group_send)(
+            receiver_group_name,
+            {
+                "type": "decline_call"
+            }
+        )
+    
+    def handle_cancel_call(self, data):
+        recipient_id = data.get("otherPersonId")
+        recipient = User.objects.get(id=recipient_id)
+        receiver_group_name = sanitize_group_name(f"group_{recipient.uuid}")
+
+        async_to_sync (self.channel_layer.group_send)(
+            receiver_group_name,
+            {
+                "type": "cancel_call"
+            }
+        )
+
+    def handle_busy(self, data):
+        recipient_id = data.get("otherPersonId")
+        recipient = User.objects.get(id=recipient_id)
+        receiver_group_name = sanitize_group_name(f"group_{recipient.uuid}")
+
+        async_to_sync (self.channel_layer.group_send)(
+            receiver_group_name,
+            {
+                "type": "busy"
+            }
+        )
+    
+    def chat_message(self, event):
+        message = event['message']
+        print(f"event ------> {event}")
+
+        self.send(text_data=json.dumps({
+            'type': 'chat',
+            'message': message
+        }))
+
+    def initiate_call(self, event):
+        callInfo = event['callInfo']
+        print(f"call info ------> {callInfo}")
+
+        self.send(text_data=json.dumps({
+            'type': 'incoming_call',
+            'callInfo': callInfo
+        }))
+    
+    def accept_call(self, event):
+        self.send(text_data=json.dumps({
+            'type': 'call_accepted'
+        }))
+    
+    def decline_call(self, event):
+        self.send(text_data=json.dumps({
+            'type': 'call_declined'
+        }))
+
+    def cancel_call(self, event):
+        self.send(text_data=json.dumps({
+            'type': 'call_cancelled'
+        }))
+    
+    def busy(self, event):
+        self.send(text_data=json.dumps({
+            'type': 'busy'
+        }))
+
     def update_contact(self, message):
         # Ensure user_one is the smaller ID and user_two is the larger ID
         user_one, user_two = (
@@ -104,17 +224,6 @@ class ChatConsumer(WebsocketConsumer):
             if message.recipient == user_two:
                 contact.unread_count += 1
             contact.save()
-
-
-    def chat_message(self, event):
-
-        message = event['message']
-        print(f"event ------> {event}")
-
-        self.send(text_data=json.dumps({
-            'type': 'chat',
-            'message': message
-        }))
 
     # def handle_typing_status(self, content):
     #     recipient_id = content.get("recipient_id")

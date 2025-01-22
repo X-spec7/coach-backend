@@ -468,7 +468,11 @@ class CreateMeetingView(APIView):
       zoomRes = create_zoom_meeting(createMeetingPayload)
 
       return Response(
-        {"message": "Created Meeting", "joinUrl": zoomRes.join_url, "start_url": zoomRes.start_url},
+        {
+          "message": "Created Meeting",
+          "joinUrl": zoomRes.join_url,
+          "startUrl": zoomRes.start_url
+        },
         status=status.HTTP_201_CREATED,
       )
     except Exception as e:
