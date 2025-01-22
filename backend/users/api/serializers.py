@@ -6,19 +6,37 @@ from django.conf import settings
 
 
 class UserSerializer(serializers.ModelSerializer):
-    avatar_image_url = serializers.SerializerMethodField()
-    banner_image_url = serializers.SerializerMethodField()
+    avatarImageUrl = serializers.SerializerMethodField()
+    bannerImageUrl = serializers.SerializerMethodField()
+
+    firstName = serializers.CharField(source='first_name')
+    lastName = serializers.CharField(source='last_name')
+    phoneNumber = serializers.CharField(source='phone_number')
+    userType = serializers.CharField(source='user_type')
+    yearsOfExperience = serializers.IntegerField(source='years_of_experience')
+
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'full_name', 'phone_number', 'email', 'user_type', 'years_of_experience', 'specialization', 'avatar_image_url', 'banner_image_url']
+        fields = [
+            'id',
+            'firstName',
+            'lastName',
+            'email',
+            'phoneNumber',
+            'userType',
+            'yearsOfExperience',
+            'specialization',
+            'avatarImageUrl',
+            'bannerImageUrl'
+        ]
 
-    def get_avatar_image_url(self, obj):
+    def get_avatarImageUrl(self, obj):
         if obj.avatar_image:
             return f"{settings.MEDIA_URL}{obj.avatar_image}"
         return None
     
-    def get_banner_image_url(self, obj):
+    def get_bannerImageUrl(self, obj):
         if obj.banner_image:
             return f"{settings.MEDIA_URL}{obj.banner_image}"
         return None
