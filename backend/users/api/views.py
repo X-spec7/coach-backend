@@ -81,9 +81,9 @@ class RegisterView(APIView):
     def post(self, request):
         try:
             data = request.data
-            firstName = data["first_name"]
-            lastName = data["last_name"]
-            role = data["user_type"]
+            firstName = data["firstName"]
+            lastName = data["lastName"]
+            role = data["userType"]
             email = data["email"]
             password = data["password"]
 
