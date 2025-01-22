@@ -223,18 +223,18 @@ class UpdateProfileView(APIView):
             user = request.user
 
             # Update user profile fields if they are not blank
-            if 'phone_number' in data and data['phone_number']:
-                user.phone_number = data['phone_number']
+            if 'phone_number' in data and data['phoneNumebr']:
+                user.phone_number = data['phoneNumber']
             if 'address' in data and data['address']:
                 user.address = data['address']
-            if 'years_of_experience' in data and data['years_of_experience'] is not None:
-                user.years_of_experience = data['years_of_experience']
+            if 'years_of_experience' in data and data['yearsOfExperience'] is not None:
+                user.years_of_experience = data['yearsOfExperience']
             if 'specialization' in data and data['specialization']:
                 user.specialization = data['specialization']
-            if 'first_name' in data and data['first_name']:
-                user.first_name = data['first_name']
-            if 'last_name' in data and data['last_name']:
-                user.last_name = data['last_name']
+            if 'first_name' in data and data['firstName']:
+                user.first_name = data['firstName']
+            if 'last_name' in data and data['lastName']:
+                user.last_name = data['lastName']
 
             # Handle qualifications
             qualifications = data.get('qualifications', [])
@@ -252,7 +252,7 @@ class UpdateProfileView(APIView):
                     if qualification_str not in current_qualifications:
                         Qualification.objects.get_or_create(name=name, year=year)
                         user.qualifications.add(Qualification.objects.get(name=name, year=year))
-            avatar_image_base64 = data.get('avatar_image')
+            avatar_image_base64 = data.get('avatarImage')
             if avatar_image_base64:
                 # Decode the Base64 string
                 format, imgstr = avatar_image_base64.split(';base64,')  # Split format and data
@@ -269,7 +269,7 @@ class UpdateProfileView(APIView):
                 user.avatar_image = f"avatar_images/{file_name}"
 
             # Handle Base64-encoded banner image
-            banner_image_base64 = data.get('banner_image')
+            banner_image_base64 = data.get('bannerImage')
             if banner_image_base64:
                 # Decode the Base64 string
                 format, imgstr = banner_image_base64.split(';base64,')  # Split format and data
