@@ -470,8 +470,8 @@ class CreateMeetingView(APIView):
       return Response(
         {
           "message": "Created Meeting",
-          "joinUrl": zoomRes.join_url,
-          "startUrl": zoomRes.start_url
+          "joinUrl": zoomRes.get("join_url"),
+          "startUrl": zoomRes.get("start_url")
         },
         status=status.HTTP_201_CREATED,
       )
