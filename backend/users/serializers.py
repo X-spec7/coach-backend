@@ -20,11 +20,12 @@ class UserSerializer(serializers.ModelSerializer):
             'id',
             'firstName',
             'lastName',
-            'email',
-            'phoneNumber',
             'userType',
-            'avatarImageUrl',
+            'email',
+            'address',
             'isSuperuser'
+            'phoneNumber',
+            'avatarImageUrl',
         ]
 
     def get_avatarImageUrl(self, obj):
