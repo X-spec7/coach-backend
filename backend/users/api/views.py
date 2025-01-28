@@ -1,3 +1,4 @@
+from django.db import transaction
 import os
 import requests
 
@@ -87,19 +88,21 @@ class RegisterView(APIView):
             if password:
                 if len(password) >= 6:
                     if not User.objects.filter(email=email).exists():
-                        user = User.objects.create_user(
-                            email=email,
-                            full_name=firstName + " " + lastName,
-                            first_name=firstName,
-                            last_name=lastName,
-                            user_type=role,
-                            password=password,
-                            email_verified=True,
-                        )
-                        if User.objects.filter(email=email).exists():
+                        with transaction.atomic():
+                            user = User.objects.create_user(
+                                email=email,
+                                full_name=f"{firstName} {lastName}",
+                                first_name=firstName,
+                                last_name=lastName,
+                                user_type=role,
+                                password=password,
+                                email_verified=True,
+                            )
 
-                            if (user.user_type == "Coach"):
-                                CoachProfile.objects.create(coach=user)
+                            # If the user type is "Coach", create the CoachProfile
+                            if role == "Coach":
+                                CoachProfile.objects.create(user=user)
+                        if User.objects.filter(email=email).exists():
 
                             return Response(
                                 {"message": "User created successfully"},

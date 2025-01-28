@@ -1,9 +1,7 @@
 import os
-import requests
-from django.urls import reverse
 from rest_framework.views import APIView
 from rest_framework import status, permissions
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 import base64
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
