@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
     phoneNumber = serializers.CharField(source='phone_number')
     userType = serializers.CharField(source='user_type')
     yearsOfExperience = serializers.IntegerField(source='years_of_experience')
+    isSuperuser = serializers.BooleanField(source='is_superuser')
 
 
     class Meta:
@@ -28,7 +29,8 @@ class UserSerializer(serializers.ModelSerializer):
             'yearsOfExperience',
             'specialization',
             'avatarImageUrl',
-            'bannerImageUrl'
+            'bannerImageUrl',
+            'isSuperuser'
         ]
 
     def get_avatarImageUrl(self, obj):
