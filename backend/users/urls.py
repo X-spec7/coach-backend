@@ -1,12 +1,8 @@
 from django.urls import path
-
-from .views import user_detail_view
-from .views import user_redirect_view
-from .views import user_update_view
+from .views import GetUserProfileView, UpdateUserProfileView
 
 app_name = "users"
 urlpatterns = [
-    path("~redirect/", view=user_redirect_view, name="redirect"),
-    path("~update/", view=user_update_view, name="update"),
-    path("<int:pk>/", view=user_detail_view, name="detail"),
+  path("profile/get/", view=GetUserProfileView.as_view(), name="get_user_profile"),
+  path("profile/update/", view=UpdateUserProfileView.as_view(), name="update_user_profile")
 ]

@@ -7,15 +7,12 @@ from django.conf import settings
 
 class UserSerializer(serializers.ModelSerializer):
     avatarImageUrl = serializers.SerializerMethodField()
-    bannerImageUrl = serializers.SerializerMethodField()
 
     firstName = serializers.CharField(source='first_name')
     lastName = serializers.CharField(source='last_name')
     phoneNumber = serializers.CharField(source='phone_number')
     userType = serializers.CharField(source='user_type')
-    yearsOfExperience = serializers.IntegerField(source='years_of_experience')
     isSuperuser = serializers.BooleanField(source='is_superuser')
-
 
     class Meta:
         model = User
@@ -26,21 +23,13 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'phoneNumber',
             'userType',
-            'yearsOfExperience',
-            'specialization',
             'avatarImageUrl',
-            'bannerImageUrl',
             'isSuperuser'
         ]
 
     def get_avatarImageUrl(self, obj):
         if obj.avatar_image:
             return f"{settings.MEDIA_URL}{obj.avatar_image}"
-        return None
-    
-    def get_bannerImageUrl(self, obj):
-        if obj.banner_image:
-            return f"{settings.MEDIA_URL}{obj.banner_image}"
         return None
 
 

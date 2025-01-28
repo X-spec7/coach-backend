@@ -1,6 +1,6 @@
 import os
 import requests
-import base64
+
 from django.contrib.auth import authenticate, login
 from rest_framework import status, permissions
 from rest_framework.decorators import action
@@ -8,16 +8,13 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateMode
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_ratelimit.decorators import ratelimit
 
-from django.conf import settings
+from backend.users.models import CoachProfile, User
 
-from backend.users.models import User, Qualification
-
-from .serializers import UserSerializer, LoginSerializer
+from ..serializers import UserSerializer, LoginSerializer
 
 def send_mail(email, content):
     apiKey = os.getenv("ELASTIC_API_KEY")
@@ -100,28 +97,16 @@ class RegisterView(APIView):
                             email_verified=True,
                         )
                         if User.objects.filter(email=email).exists():
-                            # mail verify
-                            refresh = RefreshToken.for_user(user)
-                            # response = send_mailgun_mail(
-                            #     email,
-                            #     f"{os.getenv('FRONT_URL')}/mail-verify/?token={str(refresh.access_token)}",
-                            # )
-                            response = send_mail(
-                                email,
-                                f"{os.getenv('FRONT_URL')}/mail-verify/?token={str(refresh.access_token)}",
+
+                            if (user.user_type == "Coach"):
+                                CoachProfile.objects.create(coach=user)
+
+                            return Response(
+                                {"message": "User created successfully"},
+                                status=status.HTTP_201_CREATED
                             )
-                            if response.status_code == 200:
-                                return Response(
-                                    {
-                                        "message": "User created successfully and sent verification link."
-                                    },
-                                    status=status.HTTP_201_CREATED,
-                                )
-                            else:
-                                return Response(
-                                    {"message": "Resend verification link."},
-                                    status=status.HTTP_201_CREATED,
-                                )
+
+                            # TODO: implement email verification logic
                         else:
                             return Response(
                                 {"message": "Something went wrong creating user"},
@@ -197,104 +182,3 @@ class LoginView(APIView):
         else:
             return Response(serializer.error_messages)
 
-
-class GetUserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
-
-    def get(self, request):
-        user = request.user
-
-        return Response(
-            {
-                "message": "Successfully fetched user profile",
-                "user": UserSerializer(user).data,
-            },
-            status=status.HTTP_200_OK,
-        )
-    
-class UpdateProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
-    
-    def post(self, request):
-        try:
-            data = request.data
-            user = request.user
-
-            # Update user profile fields if they are not blank
-            if 'phone_number' in data and data['phoneNumebr']:
-                user.phone_number = data['phoneNumber']
-            if 'address' in data and data['address']:
-                user.address = data['address']
-            if 'years_of_experience' in data and data['yearsOfExperience'] is not None:
-                user.years_of_experience = data['yearsOfExperience']
-            if 'specialization' in data and data['specialization']:
-                user.specialization = data['specialization']
-            if 'first_name' in data and data['firstName']:
-                user.first_name = data['firstName']
-            if 'last_name' in data and data['lastName']:
-                user.last_name = data['lastName']
-
-            # Handle qualifications
-            qualifications = data.get('qualifications', [])
-            existing_qualifications = {f"{q['name']} ({q['year']})" for q in qualifications}
-
-            current_qualifications = {f"{q.name} ({q.year})" for q in user.qualifications.all()}
-
-            # Add new qualifications that are not already present
-            for qualification in qualifications:
-                name = qualification.get('name')
-                year = qualification.get('year')
-
-                if name and year:
-                    qualification_str = f"{name} ({year})"
-                    if qualification_str not in current_qualifications:
-                        Qualification.objects.get_or_create(name=name, year=year)
-                        user.qualifications.add(Qualification.objects.get(name=name, year=year))
-            avatar_image_base64 = data.get('avatarImage')
-            if avatar_image_base64:
-                # Decode the Base64 string
-                format, imgstr = avatar_image_base64.split(';base64,')  # Split format and data
-                ext = format.split('/')[-1]  # Extract the image file extension (e.g., jpg, png)
-                file_name = f"{user.id}_avatar.{ext}"
-                file_path = os.path.join(settings.MEDIA_ROOT, 'avatar_images', file_name)
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the directory exists
-
-                # Save the file
-                with open(file_path, "wb") as f:
-                    f.write(base64.b64decode(imgstr))
-
-                # Save the relative path to the user's profile
-                user.avatar_image = f"avatar_images/{file_name}"
-
-            # Handle Base64-encoded banner image
-            banner_image_base64 = data.get('bannerImage')
-            if banner_image_base64:
-                # Decode the Base64 string
-                format, imgstr = banner_image_base64.split(';base64,')  # Split format and data
-                ext = format.split('/')[-1]  # Extract the image file extension
-                file_name = f"{user.id}_banner.{ext}"
-                file_path = os.path.join(settings.MEDIA_ROOT, 'banner_images', file_name)
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the directory exists
-
-                # Save the file
-                with open(file_path, "wb") as f:
-                    f.write(base64.b64decode(imgstr))
-
-                # Save the relative path to the user's profile
-                user.banner_image = f"banner_images/{file_name}"
-
-            user.save()
-
-            userSerializer = UserSerializer(user)
-            return Response(
-                {
-                    "message": "Profile Updated successfully.",
-                    "user": userSerializer.data,
-                },
-                status=status.HTTP_200_OK
-            )
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=400)

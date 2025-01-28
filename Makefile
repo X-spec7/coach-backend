@@ -18,10 +18,10 @@ stop-postgres:
 remove-postgres:
 	docker rm -f postgres15
 
-create-database:
+createdb:
 	docker exec -it postgres15 createdb --username=root --owner=root qb
 
-drop-database:
+dropdb:
 	docker exec -it postgres15 dropdb qb
 
 migrations:

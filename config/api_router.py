@@ -14,6 +14,7 @@ router.register("users", UserViewSet)
 
 sub_urls = [
     path('authentication/', include('users.api.urls')),
+    path('users', include('users.urls')),
     path("chat/", include('chat.urls')),
     path("session/", include('session.urls'))
 ]
