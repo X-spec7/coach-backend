@@ -15,7 +15,7 @@ from django_ratelimit.decorators import ratelimit
 
 from django.conf import settings
 
-from backend.users.models import User, Qualification
+from backend.users.models import User
 
 from .serializers import UserSerializer, LoginSerializer
 
@@ -236,22 +236,6 @@ class UpdateProfileView(APIView):
             if 'last_name' in data and data['lastName']:
                 user.last_name = data['lastName']
 
-            # Handle qualifications
-            qualifications = data.get('qualifications', [])
-            existing_qualifications = {f"{q['name']} ({q['year']})" for q in qualifications}
-
-            current_qualifications = {f"{q.name} ({q.year})" for q in user.qualifications.all()}
-
-            # Add new qualifications that are not already present
-            for qualification in qualifications:
-                name = qualification.get('name')
-                year = qualification.get('year')
-
-                if name and year:
-                    qualification_str = f"{name} ({year})"
-                    if qualification_str not in current_qualifications:
-                        Qualification.objects.get_or_create(name=name, year=year)
-                        user.qualifications.add(Qualification.objects.get(name=name, year=year))
             avatar_image_base64 = data.get('avatarImage')
             if avatar_image_base64:
                 # Decode the Base64 string
