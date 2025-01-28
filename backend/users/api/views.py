@@ -15,7 +15,7 @@ from django_ratelimit.decorators import ratelimit
 
 from django.conf import settings
 
-from backend.users.models import User
+from backend.users.models import CoachProfile, User
 
 from .serializers import UserSerializer, LoginSerializer
 
@@ -100,28 +100,16 @@ class RegisterView(APIView):
                             email_verified=True,
                         )
                         if User.objects.filter(email=email).exists():
-                            # mail verify
-                            refresh = RefreshToken.for_user(user)
-                            # response = send_mailgun_mail(
-                            #     email,
-                            #     f"{os.getenv('FRONT_URL')}/mail-verify/?token={str(refresh.access_token)}",
-                            # )
-                            response = send_mail(
-                                email,
-                                f"{os.getenv('FRONT_URL')}/mail-verify/?token={str(refresh.access_token)}",
+
+                            if (user.user_type == "Coach"):
+                                CoachProfile.objects.create(coach=user)
+
+                            return Response(
+                                {"message": "User created successfully"},
+                                status=status.HTTP_201_CREATED
                             )
-                            if response.status_code == 200:
-                                return Response(
-                                    {
-                                        "message": "User created successfully and sent verification link."
-                                    },
-                                    status=status.HTTP_201_CREATED,
-                                )
-                            else:
-                                return Response(
-                                    {"message": "Resend verification link."},
-                                    status=status.HTTP_201_CREATED,
-                                )
+
+                            # TODO: implement email verification logic
                         else:
                             return Response(
                                 {"message": "Something went wrong creating user"},
