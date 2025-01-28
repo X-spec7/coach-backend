@@ -42,18 +42,11 @@ class Qualification(models.Model):
 
 
 class User(AbstractUser):
-
-    USER_TYPE_CHOICES = [
-        ("User", _("Coach")),
-        ("Client", _("Client")),
-    ]
-
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-
     full_name = CharField(_("Full Name"), max_length=255, default="John Doe")
     first_name = CharField(_("First Name"), max_length=255, default="John")
     last_name = CharField(_("Last Name"), max_length=255, default="Doe")
-    user_type = CharField(_("User Type"), max_length=50, choices=USER_TYPE_CHOICES, default="Client")
+    user_type = CharField(_("User Type"), max_length=50, default="Client")
     phone_number = models.CharField(_("Phone Number"), max_length=20, blank=True)
     address = models.CharField(_("Phone Number"), max_length=20, blank=True)
     email = EmailField(_("Email Address"), unique=True)
@@ -64,33 +57,18 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
-    banner_image = models.ImageField(
-        _("Banner Image"),
-        upload_to="banner_images/",
-        null=True,
-        blank=True,
-    )
     email_verified = models.BooleanField(_("Email Verified"), default=False)
-    years_of_experience = models.PositiveIntegerField(
-        _("Years of Experience"), null=True, blank=True
-    )
-    specialization = models.CharField(
-        _("Specialization"), max_length=255, blank=True, null=True
-    )
-
-    status = models.CharField(
-        _("Status"),
-        max_length=50,
-        choices=[("online", _("Online")), ("offline", _("Offline"))],
-        default="offline",
-    )
-
-    last_seen = models.DateTimeField(_("Last Seen"), default=now)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     objects: ClassVar[UserManager] = UserManager()
+
+    def is_coach(self):
+        return self.user_type == "Coach"
+
+    def is_client(self):
+        return self.user_type == "Client"
 
     def get_absolute_url(self) -> str:
         return reverse("users:detail", kwargs={"pk": self.id})
@@ -104,6 +82,22 @@ class User(AbstractUser):
     class Meta:
         verbose_name = _("User")
         verbose_name_plural = _("Users")
+
+class CoachProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="coach_profile")
+    certification = models.CharField(_("Certification"), max_length=255, blank=True, null=True)
+    specialization = models.CharField(_("Specialization"), max_length=255, blank=True, null=True)
+    years_of_experience = models.PositiveIntegerField(_("Years of Experience"), blank=True, null=True)
+
+    # TODO: apply this after creating classes table
+    # classes = models.ManyToManyField("Class", related_name="coaches", blank=True)
+    # sessions = models.ManyToManyField(Session, related_name="coaches", blank=True)
+    banner_image = models.ImageField(
+        _("Banner Image"),
+        upload_to="banner_images/",
+        null=True,
+        blank=True,
+    )
 
 class UserQualification(models.Model):
     user = models.ForeignKey(User, related_name='qualifications', on_delete=models.CASCADE)

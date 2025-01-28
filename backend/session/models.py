@@ -1,8 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 from django.db import models
-
-User = get_user_model()
+from backend.users.models import User
 
 class Meeting(models.Model):
     start_time = models.DateTimeField(blank=False, null=False)
