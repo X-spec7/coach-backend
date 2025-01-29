@@ -15,7 +15,7 @@ from django_ratelimit.decorators import ratelimit
 
 from backend.users.models import CoachProfile, User
 
-from ..serializers import UserSerializer, LoginSerializer
+from ..serializers import ClientSerializer, LoginSerializer
 
 def send_mail(email, content):
     apiKey = os.getenv("ELASTIC_API_KEY")
@@ -57,7 +57,7 @@ def send_mailgun_mail(to_mail, content):
         print(f"Mailgun error: {ex}")
 
 class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericViewSet):
-    serializer_class = UserSerializer
+    serializer_class = ClientSerializer
     queryset = User.objects.all()
     lookup_field = "pk"
 
@@ -67,7 +67,7 @@ class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericV
 
     @action(detail=False)
     def me(self, request):
-        serializer = UserSerializer(request.user, context={"request": request})
+        serializer = ClientSerializer(request.user, context={"request": request})
         return Response(status=status.HTTP_200_OK, data=serializer.data)
 
 class RegisterView(APIView):
@@ -155,7 +155,7 @@ class LoginView(APIView):
             email = serializer.validated_data["email"]
             password = serializer.validated_data["password"]
             user = authenticate(request, email=email, password=password)
-            userSerializer = UserSerializer(user)
+            userSerializer = ClientSerializer(user)
             if user is not None:
                 if user.email_verified:
                     login(request, user)

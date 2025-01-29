@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
 
 from backend.users.models import User, CoachProfile
-from .serializers import UserSerializer
+from .serializers import CoachSerializer, ClientSerializer
 from django.conf import settings
 
 class GetUserProfileView(APIView):
@@ -20,10 +20,17 @@ class GetUserProfileView(APIView):
   def get(self, request):
       user = request.user
 
+      user_serializer = ClientSerializer(user)
+
+      if user.user_type == "Coach":
+        user_serializer = CoachSerializer(user)
+      elif user.user_type == "Client":
+        user_serializer = ClientSerializer(user)
+
       return Response(
           {
               "message": "Successfully fetched user profile",
-              "user": UserSerializer(user).data,
+              "user": user_serializer.data,
           },
           status=status.HTTP_200_OK,
       )
@@ -65,7 +72,7 @@ class UpdateClientProfileView(APIView):
 
         user.save()
 
-        userSerializer = UserSerializer(user)
+        userSerializer = ClientSerializer(user)
         return Response(
             {
                 "message": "Profile Updated successfully.",
@@ -139,12 +146,12 @@ class UpdateCoachProfileView(APIView):
         user.save()
         coach_profile.save()
       
-      user_serializer = UserSerializer(user)
+      coach_serializer = CoachSerializer(user)
       
       return Response(
         {
           "message": "Profile updated successfully",
-          "user": user_serializer.data
+          "user": coach_serializer.data
         },
         status=status.HTTP_200_OK
       )

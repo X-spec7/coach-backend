@@ -84,3 +84,4 @@ class Certification(models.Model):
         verbose_name_plural = _("Certifications")
         ordering = ["-acquired_date"]
 
+
