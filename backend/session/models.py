@@ -16,7 +16,7 @@ class Meeting(models.Model):
         return f"{self.meeting_number}"
 
     class Meta:
-        app_label = "session"  # Update this to the correct app name
+        app_label = "session"
 
 
 class Session(models.Model):
@@ -41,7 +41,7 @@ class Session(models.Model):
     meeting = models.OneToOneField(Meeting, verbose_name=_(""), on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.title}"  # Fix the property to return the correct field
+        return f"{self.title}"
 
     class Meta:
         app_label = "session"
