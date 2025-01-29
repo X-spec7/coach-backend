@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
             'userType',
             'email',
             'address',
-            'isSuperuser'
+            'isSuperuser',
             'phoneNumber',
             'avatarImageUrl',
         ]

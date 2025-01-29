@@ -16,7 +16,7 @@ class User(AbstractUser):
     last_name = CharField(_("Last Name"), max_length=255, default="Doe")
     user_type = CharField(_("User Type"), max_length=50, default="Client")
     phone_number = models.CharField(_("Phone Number"), max_length=20, blank=True)
-    address = models.CharField(_("Phone Number"), max_length=20, blank=True)
+    address = models.CharField(_("Address"), max_length=20, blank=True)
     email = EmailField(_("Email Address"), unique=True)
     username = None
     avatar_image = models.ImageField(

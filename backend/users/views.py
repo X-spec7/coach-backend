@@ -35,22 +35,22 @@ class UpdateUserProfileView(APIView):
         data = request.data
         user = request.user
 
-        # Update user profile fields if they are not blank
-        if 'phone_number' in data and data['phoneNumebr']:
-            user.phone_number = data['phoneNumber']
-        if 'address' in data and data['address']:
-            user.address = data['address']
-        if 'first_name' in data and data['firstName']:
-            user.first_name = data['firstName']
-        if 'last_name' in data and data['lastName']:
-            user.last_name = data['lastName']
+        phone_number = data.get("phoneNumber", "")
+        address = data.get("address", "")
+        first_name = data.get("firstName", "")
+        last_name = data.get("lastName", "")
 
-        avatar_image_base64 = data.get('avatarImage')
+        user.phone_number = phone_number
+        user.address = address
+        user.first_name = first_name
+        user.last_name = last_name
+
+        avatar_image_base64 = data.get('avatar')
         if avatar_image_base64:
             # Decode the Base64 string
             format, imgstr = avatar_image_base64.split(';base64,')  # Split format and data
             ext = format.split('/')[-1]  # Extract the image file extension (e.g., jpg, png)
-            file_name = f"{user.id}_avatar.{ext}"
+            file_name = f"{user.uuid}_avatar.{ext}"
             file_path = os.path.join(settings.MEDIA_ROOT, 'avatar_images', file_name)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the directory exists
 
