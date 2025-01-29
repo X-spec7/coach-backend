@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from backend.workouts.models import WorkoutDailyPlan
+from backend.workouts.models import ClientWorkoutDailyPlan, ClassWorkoutDailyPlan
 
 class Exercise(models.Model):
   title = models.CharField(_("Title"), max_length=255, unique=True)
@@ -23,8 +23,8 @@ class Exercise(models.Model):
     ordering = ["title"]
 
 class WorkoutExercise(models.Model):
-  """Exercises included in a Daily Plan, linked to the main Exercise model."""
-  daily_plan = models.ForeignKey(WorkoutDailyPlan, on_delete=models.CASCADE, related_name="workout_exercises")
+  """Exercises included in a Client Workout Daily Plan, linked to the main Exercise model."""
+  daily_plan = models.ForeignKey(ClientWorkoutDailyPlan, on_delete=models.CASCADE, related_name="workout_exercises")
   exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_instances")
   set_count = models.PositiveIntegerField(_("Set Count"), default=3)
   reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
@@ -39,4 +39,20 @@ class WorkoutExercise(models.Model):
     verbose_name = _("Workout Exercise")
     verbose_name_plural = _("Workout Exercises")
 
-# TODO: create class workout plan
+class WorkoutExercise(models.Model):
+  """Exercises included in a Class Workout Daily Plan, linked to the main Exercise model."""
+  daily_plan = models.ForeignKey(ClassWorkoutDailyPlan, on_delete=models.CASCADE, related_name="workout_exercises")
+  exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_instances")
+  set_count = models.PositiveIntegerField(_("Set Count"), default=3)
+  reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
+  rest_duration = models.PositiveIntegerField(_("Rest Duration (seconds)"), default=30)
+  calorie = models.PositiveIntegerField(_("Calorie Burnt per Set"), default=50)
+
+  def __str__(self):
+    return f"{self.exercise.title} - {self.set_count} Sets x {self.reps_count} Reps"
+
+  class Meta:
+    app_label = "exercises"
+    verbose_name = _("Workout Exercise")
+    verbose_name_plural = _("Workout Exercises")
+
