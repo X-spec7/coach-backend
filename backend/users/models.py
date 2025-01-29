@@ -51,8 +51,14 @@ class User(AbstractUser):
         verbose_name = _("User")
         verbose_name_plural = _("Users")
 
+class CoachReview(models.Model):
+    coach = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_coach", limit_choices_to={"user_type": "Coach"})
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_reviewer", limit_choices_to={"user_type": "Client"})
+    content = models.TextField(_("review_content"))
+
+
 class CoachProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="coach_profile")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="coach_profile", limit_choices_to={"user_type": "Coach"})
     certification = models.CharField(_("Certification"), max_length=255, blank=True, null=True)
     specialization = models.CharField(_("Specialization"), max_length=255, blank=True, null=True)
     years_of_experience = models.PositiveIntegerField(_("Years of Experience"), blank=True, null=True)
