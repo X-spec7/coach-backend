@@ -37,12 +37,14 @@ class CoachSerializer(ClientSerializer):
     bannerImageUrl = serializers.SerializerMethodField()
     yearsOfExperience = serializers.SerializerMethodField()
     specialization = serializers.SerializerMethodField()
+    certifications = serializers.SerializerMethodField()
 
     class Meta(ClientSerializer.Meta):
         fields = ClientSerializer.Meta.fields + [
             'bannerImageUrl',
             'yearsOfExperience',
             'specialization',
+            'certifications',
         ]
     
     def get_bannerImageUrl(self, obj):
@@ -55,6 +57,17 @@ class CoachSerializer(ClientSerializer):
     def get_specialization(self, obj):
         coach_profile = CoachProfile.objects.get(user=obj)
         return coach_profile.specialization
+    def get_certifications(self, obj):
+        coach_profile = CoachProfile.objects.get(user=obj)
+        certifications = coach_profile.certifications.all()
+
+        return [
+            {
+                "certificationTitle": cert.certification_title,
+                "certificationDetail": cert.certification_detail
+            }
+            for cert in certifications
+        ]
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()

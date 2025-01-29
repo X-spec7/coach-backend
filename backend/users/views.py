@@ -8,7 +8,7 @@ import base64
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
-from backend.users.models import User, CoachProfile
+from backend.users.models import User, CoachProfile, Certification
 from django.conf import settings
 
 from .serializers import (
@@ -105,6 +105,9 @@ class UpdateCoachProfileView(APIView):
     phone_number = data.get("phoneNumber", "")
     years_of_experience = data.get("yearsOfExperience", 0)
     specialization = data.get("specialization", "")
+    certifications_data = data.get("certifications", [])
+
+    print(f"certifications data ----------------------------> {certifications_data}")
 
     avatar_image_base64 = data.get("avatar")
     banner_image_base64 = data.get("banner")
@@ -116,46 +119,76 @@ class UpdateCoachProfileView(APIView):
       user.address = address
       user.first_name = first_name
       user.last_name = last_name
-      
+
       coach_profile.years_of_experience = years_of_experience
       coach_profile.specialization = specialization
 
+      # Handle Avatar Image Upload
       if avatar_image_base64:
-        format, imgstr = avatar_image_base64.split(';base64,')  # Split format and data
+        format, imgstr = avatar_image_base64.split(';base64,')  
         ext = format.split('/')[-1]
         file_name = f"{user.uuid}_avatar.{ext}"
         file_path = os.path.join(settings.MEDIA_ROOT, 'avatar_images', file_name)
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        # Save the file
         with open(file_path, "wb") as f:
-            f.write(base64.b64decode(imgstr))
+          f.write(base64.b64decode(imgstr))
 
         user.avatar_image = f"avatar_images/{file_name}"
 
+      # Handle Banner Image Upload
       if banner_image_base64:
-        format, imgstr = banner_image_base64.split(';base64,')  # Split format and data
+        format, imgstr = banner_image_base64.split(';base64,')  
         ext = format.split('/')[-1]
         file_name = f"{user.uuid}_banner.{ext}"
         file_path = os.path.join(settings.MEDIA_ROOT, 'banner_images', file_name)
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        # Save the file
         with open(file_path, "wb") as f:
-            f.write(base64.b64decode(imgstr))
+          f.write(base64.b64decode(imgstr))
 
         coach_profile.banner_image = f"banner_images/{file_name}"
-      
+
+      # Handle Certifications
+      existing_certifications = {cert.certification_title: cert for cert in coach_profile.certifications.all()}
+      print(f"existing certifications -------------------------> {existing_certifications}")
+      updated_certification_titles = set()
+
+      for cert_data in certifications_data:
+        title = cert_data.get("certificationTitle", "").strip()
+        detail = cert_data.get("certificationDetail", "").strip()
+
+        if title and detail:
+          if title in existing_certifications:
+            # Update existing certification
+            certification = existing_certifications[title]
+            certification.certification_detail = detail
+            certification.save()
+          else:
+            # Create new certification
+            Certification.objects.create(
+              coach=coach_profile,
+              certification_title=title,
+              certification_detail=detail
+            )
+
+          updated_certification_titles.add(title)
+
+      # Delete removed certifications
+      for title in existing_certifications:
+        if title not in updated_certification_titles:
+          existing_certifications[title].delete()
+
       with transaction.atomic():
         user.save()
         coach_profile.save()
-      
+
       coach_serializer = CoachSerializer(user)
-      
+
       return Response(
         {
-          "message": "Profile updated successfully",
-          "user": coach_serializer.data
+            "message": "Profile updated successfully",
+            "user": coach_serializer.data
         },
         status=status.HTTP_200_OK
       )
