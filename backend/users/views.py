@@ -8,10 +8,14 @@ import base64
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
-
 from backend.users.models import User, CoachProfile
-from .serializers import CoachSerializer, ClientSerializer
 from django.conf import settings
+
+from .serializers import (
+  CoachSerializer,
+  ClientSerializer,
+  GetCoachesRequestDTO,
+)
 
 class GetUserProfileView(APIView):
   permission_classes = [IsAuthenticated]
@@ -169,3 +173,25 @@ class UpdateCoachProfileView(APIView):
           {"message": "An error occurred", "detail": str(e)},
           status=status.HTTP_500_INTERNAL_SERVER_ERROR,
       )
+
+class GetCoachesView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request):
+    serializer = GetCoachesRequestDTO(data=request.query_params)
+
+    if not serializer.is_valid():
+      return Response(
+        {"message": "Invalid request data", "details": serializer.error},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+    
+    validated_data = serializer.validated_data
+
+    limit = validated_data.get("limit", 10)
+    offset = validated_data.get("offset", 0)
+    query = validated_data.get("query")
+
+    users_query = User.objects.all()
+    users_query = users_query[offset:offset + limit]

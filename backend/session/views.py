@@ -36,7 +36,7 @@ class GetSessionsView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"error": "Invalid request data", "details": serializer.errors},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
     

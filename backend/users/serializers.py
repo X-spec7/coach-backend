@@ -60,3 +60,12 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
     
+class GetCoachesRequestDTO(serializers.Serializer):
+    limit = serializers.IntegerField(min_value=1, required=True)
+    offset = serializers.IntegerField(min_value=0, required=True)
+    # TODO: update default value to Concealed
+    query = serializers.CharField(max_length=20, default="All")
+
+# class CoachDetailSerializer(serializers.Serializer):
+
+#     class Meta:

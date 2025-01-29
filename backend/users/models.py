@@ -66,6 +66,7 @@ class CoachProfile(models.Model):
         null=True,
         blank=True,
     )
+    listed = models.BooleanField(_("Listed"), default=False, help_text=_("Indicates whether the coach is approved by the admin"))
 
 class Certification(models.Model):
     coach = models.ForeignKey(
@@ -73,15 +74,13 @@ class Certification(models.Model):
         on_delete=models.CASCADE,
         related_name="certifications",
     )
-    certification_name = models.CharField(_("Certification Name"), max_length=255)
-    acquired_date = models.DateField(_("Acquired Date"))
+    certification_title = models.CharField(_("Certification Title"), max_length=255)
+    certification_detail = models.CharField(_("Certification Detail"), max_length=255)
 
     def __str__(self):
-        return f"{self.certification_name} ({self.acquired_date})"
+        return f"{self.certification_title} ({self.certification_detail})"
 
     class Meta:
         verbose_name = _("Certification")
         verbose_name_plural = _("Certifications")
-        ordering = ["-acquired_date"]
-
 
