@@ -94,6 +94,7 @@ LOCAL_APPS = [
     "backend.session",
     "backend.exercises",
     "backend.workouts",
+    "backend.classes",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
