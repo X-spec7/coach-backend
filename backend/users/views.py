@@ -99,7 +99,7 @@ class UpdateCoachProfileView(APIView):
     banner_image_base64 = data.get("banner")
 
     try:
-      coach_profile = CoachProfile.objects.get(user=user)
+      coach_profile, created = CoachProfile.objects.get_or_create(user=user)
 
       user.phone_number = phone_number
       user.address = address
