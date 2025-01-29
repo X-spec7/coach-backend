@@ -92,7 +92,8 @@ LOCAL_APPS = [
     "backend.users",
     "backend.chat",
     "backend.session",
-    "backend.exercises"
+    "backend.exercises",
+    "backend.workouts",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
