@@ -50,31 +50,9 @@ class Session(models.Model):
         verbose_name_plural = _("Sessions")
 
 class ClassSession(Session):
-    title = models.CharField(max_length=255, blank=False, null=False)
-    start_date = models.DateTimeField(null=False)
-    duration = models.IntegerField(null=False)
-    coach = models.ForeignKey(User, verbose_name=_("Session Creator"), related_name="session_user", on_delete=models.CASCADE, limit_choices_to={"user_type": "Coach"})
     used_class = models.ForeignKey(Class, verbose_name=_("Using Class"), related_name="session_class", on_delete=models.CASCADE)
-    goal = models.CharField(max_length=100, blank=False, null=False)
-    level = models.CharField(max_length=100, blank=False, null=False)
-    description = models.TextField(blank=False, null=False)
-    banner_image = models.ImageField(
-        _("Session Banner Image"),
-        upload_to="session_banner_images/",
-        null=True,
-        blank=True,
-    )
-    current_participant_number = models.IntegerField(null=False, default=0)
-    total_participant_number = models.IntegerField(null=False)
-    price = models.IntegerField(null=False)
-    equipments = models.JSONField(blank=True, null=True)
-    booked_users = models.ManyToManyField(User, verbose_name=_("Booked Users"), related_name="booked_sessions")
-    meeting = models.OneToOneField(Meeting, verbose_name=_(""), on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.title}"
 
     class Meta:
         app_label = "session"
-        verbose_name = _("Session")
-        verbose_name_plural = _("Sessions")
+        verbose_name = _("Class Session")
+        verbose_name_plural = _("Class Sessions")

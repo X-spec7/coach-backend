@@ -15,6 +15,10 @@ from .serializers import (
   CoachSerializer,
   ClientSerializer,
   GetCoachesRequestDTO,
+  GetCoachesResponseDTO,
+  GetCoachesTotalCountRequestDTO,
+  GetCoachByIdRequestDTO,
+  GetCoachByIdResponseDTO,
 )
 
 class GetUserProfileView(APIView):
@@ -38,7 +42,7 @@ class GetUserProfileView(APIView):
           },
           status=status.HTTP_200_OK,
       )
-  
+
 class UpdateClientProfileView(APIView):
   permission_classes = [IsAuthenticated]
   authentication_classes = [JWTAuthentication]
@@ -219,12 +223,147 @@ class GetCoachesView(APIView):
         {"message": "Invalid request data", "details": serializer.error},
         status=status.HTTP_400_BAD_REQUEST
       )
-    
+
     validated_data = serializer.validated_data
 
     limit = validated_data.get("limit", 10)
     offset = validated_data.get("offset", 0)
     query = validated_data.get("query")
+    specialization = validated_data.get("specialization")
+    listed_filter = validated_data.get("listedState")
 
-    users_query = User.objects.all()
-    users_query = users_query[offset:offset + limit]
+    try:
+      coaches_query = User.objects.filter(user_type="Coach")
+
+      if query:
+        coaches_query = coaches_query.filter(full_name__icontains=query)
+      if specialization != "All":
+        coaches_query = coaches_query.filter(coach_profile__specialization__icontains=specialization)
+      if listed_filter != "All":
+        listed_bool = listed_filter == "listed"
+        coaches_query = coaches_query.filter(coach_profile__listed=listed_bool)
+
+      total_count = coaches_query.count()
+      coaches = coaches_query[offset:offset, limit]
+
+      serialized_coaches = GetCoachesResponseDTO(coaches, many=True).data
+
+      return Response(
+        {
+          "message": "Coaches retrieved successfully",
+          "totalCoachesCount": total_count,
+          "coaches": serialized_coaches,
+        },
+        status=status.HTTP_200_OK,
+      )
+
+    except AttributeError as e:
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+    except Exception as e:
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+class GetCoachesTotalCountView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request):
+    serializer = GetCoachesTotalCountRequestDTO(data=request.query_params)
+
+    if not serializer.is_valid():
+      return Response(
+        {"message": "Invalid request data", "details": serializer.error},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+    
+    validated_data = serializer.validated_data
+
+    query = validated_data.get("query")
+    specialization = validated_data.get("specialization")
+    listed_filter = validated_data.get("listedState")
+
+    try:
+      coaches_query = User.objects.filter(user_type="Coach")
+
+      if query:
+        coaches_query = coaches_query.filter(full_name__icontains=query)
+      if specialization != "All":
+        coaches_query = coaches_query.filter(coach_profile__specialization__icontains=specialization)
+      if listed_filter != "All":
+        listed_bool = listed_filter == "listed"
+        coaches_query = coaches_query.filter(coach_profile__listed=listed_bool)
+      
+      total_count = coaches_query.count()
+
+      return Response(
+        {
+          "message": "Get coaches total count successfully",
+          "totalCount": total_count
+        },
+        status=status.HTTP_200_OK
+      )
+
+    except AttributeError as e:
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+    except Exception as e:
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+class GetCoachByIdView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request):
+    serializer = GetCoachByIdRequestDTO(data=request.query_params)
+
+    if not serializer.is_valid():
+      return Response(
+        {"message": "Invalid request data", "details": serializer.error},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+    
+    validated_data = serializer.validated_data
+
+    coach_id = validated_data.get("coachId")
+
+    try:
+      coach = User.objects.get(id=coach_id)
+
+      serialized_coach = GetCoachByIdResponseDTO(coach)
+
+      return Response(
+        {
+          "message": "Get coach successfully",
+          "coach": serialized_coach.data
+        },
+        status=status.HTTP_200_OK
+      )
+    except AttributeError as e:
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+    except Exception as e:
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )

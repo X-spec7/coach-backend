@@ -79,7 +79,8 @@ class CoachProfile(models.Model):
         null=True,
         blank=True,
     )
-    listed = models.BooleanField(_("Listed"), default=False, help_text=_("Indicates whether the coach is approved by the admin"))
+    # TODO!: update default value to false after admin feature is ready
+    listed = models.BooleanField(_("Listed"), default=True, help_text=_("Indicates whether the coach is approved by the admin"))
 
 class Certification(models.Model):
     coach = models.ForeignKey(
