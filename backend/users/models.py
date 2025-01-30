@@ -11,9 +11,9 @@ from .managers import UserManager
 
 class User(AbstractUser):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    full_name = CharField(_("Full Name"), max_length=255, default="John Doe")
-    first_name = CharField(_("First Name"), max_length=255, default="John")
-    last_name = CharField(_("Last Name"), max_length=255, default="Doe")
+    full_name = CharField(_("Full Name"), max_length=50, default="John Doe")
+    first_name = CharField(_("First Name"), max_length=50, default="John")
+    last_name = CharField(_("Last Name"), max_length=50, default="Doe")
     user_type = CharField(_("User Type"), max_length=50, default="Client")
     phone_number = models.CharField(_("Phone Number"), max_length=20, blank=True)
     address = models.CharField(_("Address"), max_length=20, blank=True)
@@ -53,7 +53,14 @@ class User(AbstractUser):
 
 class CoachReview(models.Model):
     coach = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_coach", limit_choices_to={"user_type": "Coach"})
-    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_reviewer", limit_choices_to={"user_type": "Client"})
+    reviewer_name = CharField(_("Reviewer Full Name"), max_length=50, null=False, blank=False)
+    reviewer_avatar = models.ImageField(
+        _("Review Avatar Image"),
+        upload_to="user_images/",
+        null=True,
+        blank=True,
+    )
+    rating = models.PositiveIntegerField(_("Review Rating"), blank=False, null=False)
     content = models.TextField(_("review_content"))
 
 
@@ -72,7 +79,8 @@ class CoachProfile(models.Model):
         null=True,
         blank=True,
     )
-    listed = models.BooleanField(_("Listed"), default=False, help_text=_("Indicates whether the coach is approved by the admin"))
+    # TODO!: update default value to false after admin feature is ready
+    listed = models.BooleanField(_("Listed"), default=True, help_text=_("Indicates whether the coach is approved by the admin"))
 
 class Certification(models.Model):
     coach = models.ForeignKey(
