@@ -21,6 +21,7 @@ class ClientSerializer(serializers.ModelSerializer):
             'id',
             'firstName',
             'lastName',
+            'fullName',
             'userType',
             'email',
             'address',
@@ -77,19 +78,22 @@ class LoginSerializer(serializers.Serializer):
 class GetCoachesRequestDTO(serializers.Serializer):
     limit = serializers.IntegerField(min_value=1, required=True)
     offset = serializers.IntegerField(min_value=0, required=True)
-    query = serializers.CharField(max_length=20)
+    query = serializers.CharField(max_length=20, required=False)
     specialization = serializers.CharField(max_length=20, default="All")
-    listedState = serializers.CharField(max_length=20, default="All")
+    listed = serializers.CharField(max_length=20, default="all")
 
 class GetCoachesTotalCountRequestDTO(serializers.Serializer):
-    query = serializers.CharField(max_length=20)
+    query = serializers.CharField(max_length=20, required=False)
     specialization = serializers.CharField(max_length=20, default="All")
-    listedState = serializers.CharField(max_length=20, default="All")
+    listed = serializers.CharField(max_length=20, default="all")
 
 class GetCoachByIdRequestDTO(serializers.Serializer):
     coachId = serializers.IntegerField(required=True)
 
-class GetCoachesResponseDTO(serializers.Serializer):
+class ToggleCoachListedStateRequestDTO(serializers.Serializer):
+    coachId = serializers.IntegerField(required=True)
+
+class GetCoachesResponseDTO(serializers.ModelSerializer):
     coachBannerImageUrl = serializers.SerializerMethodField()
     coachName = serializers.CharField(source='full_name')
     specialization = serializers.SerializerMethodField()
@@ -112,7 +116,7 @@ class GetCoachesResponseDTO(serializers.Serializer):
     def get_specialization(self, obj):
         coach_profile = CoachProfile.objects.get(user=obj)
         return coach_profile.specialization
-    def listed(self, obj):
+    def get_listed(self, obj):
         coach_profile = CoachProfile.objects.get(user=obj)
         return coach_profile.listed
     
@@ -127,7 +131,3 @@ class GetCoachByIdResponseDTO(CoachSerializer):
             # 'classes',
             # 'reviews',
         ]
-
-# class CoachDetailSerializer(serializers.Serializer):
-
-#     class Meta:

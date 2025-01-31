@@ -6,6 +6,7 @@ from .views import (
   GetCoachesView,
   GetCoachByIdView,
   GetCoachesTotalCountView,
+  ToggleCoachListedStateView,
 )
 
 app_name = "users"
@@ -16,4 +17,5 @@ urlpatterns = [
   path("coaches/get/", view=GetCoachesView.as_view(), name="get_coaches"),
   path("coaches/get/count/", view=GetCoachesTotalCountView.as_view(), name="get_coaches_count"),
   path("coach/get/", view=GetCoachByIdView.as_view(), name="get_coach"),
+  path("coach/toggle/listed/", view=ToggleCoachListedStateView.as_view(), name="toggle_coach_listed"),
 ]

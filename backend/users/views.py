@@ -19,6 +19,7 @@ from .serializers import (
   GetCoachesTotalCountRequestDTO,
   GetCoachByIdRequestDTO,
   GetCoachByIdResponseDTO,
+  ToggleCoachListedStateRequestDTO,
 )
 
 class GetUserProfileView(APIView):
@@ -230,7 +231,9 @@ class GetCoachesView(APIView):
     offset = validated_data.get("offset", 0)
     query = validated_data.get("query")
     specialization = validated_data.get("specialization")
-    listed_filter = validated_data.get("listedState")
+    listed_filter = validated_data.get("listed")
+
+    print(f"listed filter {listed_filter}")
 
     try:
       coaches_query = User.objects.filter(user_type="Coach")
@@ -239,12 +242,12 @@ class GetCoachesView(APIView):
         coaches_query = coaches_query.filter(full_name__icontains=query)
       if specialization != "All":
         coaches_query = coaches_query.filter(coach_profile__specialization__icontains=specialization)
-      if listed_filter != "All":
+      if listed_filter != "all":
         listed_bool = listed_filter == "listed"
         coaches_query = coaches_query.filter(coach_profile__listed=listed_bool)
 
       total_count = coaches_query.count()
-      coaches = coaches_query[offset:offset, limit]
+      coaches = coaches_query[offset:offset + limit]
 
       serialized_coaches = GetCoachesResponseDTO(coaches, many=True).data
 
@@ -288,7 +291,7 @@ class GetCoachesTotalCountView(APIView):
 
     query = validated_data.get("query")
     specialization = validated_data.get("specialization")
-    listed_filter = validated_data.get("listedState")
+    listed_filter = validated_data.get("listed")
 
     try:
       coaches_query = User.objects.filter(user_type="Coach")
@@ -297,7 +300,7 @@ class GetCoachesTotalCountView(APIView):
         coaches_query = coaches_query.filter(full_name__icontains=query)
       if specialization != "All":
         coaches_query = coaches_query.filter(coach_profile__specialization__icontains=specialization)
-      if listed_filter != "All":
+      if listed_filter != "all":
         listed_bool = listed_filter == "listed"
         coaches_query = coaches_query.filter(coach_profile__listed=listed_bool)
       
@@ -354,6 +357,7 @@ class GetCoachByIdView(APIView):
         },
         status=status.HTTP_200_OK
       )
+
     except AttributeError as e:
       print("AttributeError:", str(e))
       traceback.print_exc()
@@ -367,3 +371,65 @@ class GetCoachByIdView(APIView):
         {"message": "Attribute error occurred", "detail": str(e)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
+
+class ToggleCoachListedStateView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def post(self, request):
+    serializer = ToggleCoachListedStateRequestDTO(data=request.data)
+
+    if not serializer.is_valid():
+      return Response(
+        {"message": "Invalid request data", "details": serializer.error},
+        status=status.HTTP_400_BAD_REQUEST
+      )
+
+    validated_data = serializer.validated_data
+
+    coach_id = validated_data["coachId"]
+
+    try:
+      coach = User.objects.get(id=coach_id)
+
+      coach_profile = CoachProfile.objects.get(user=coach)
+
+      coach_profile.listed = not coach_profile.listed
+      coach_profile.save()
+
+      serialized_coach = GetCoachesResponseDTO(coach).data
+
+      return Response(
+        {
+            "message": "Coach listing status updated successfully",
+            "coach": serialized_coach,
+        },
+        status=status.HTTP_200_OK
+      )
+    
+    except User.DoesNotExist:
+      return Response(
+        {"message": "Coach not found"},
+        status=status.HTTP_404_NOT_FOUND
+      )
+
+    except CoachProfile.DoesNotExist:
+      return Response(
+        {"message": "Coach profile not found"},
+        status=status.HTTP_404_NOT_FOUND
+      )
+    
+    except AttributeError as e:
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
+    except Exception as e:
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+    
