@@ -39,7 +39,7 @@ class WorkoutExercise(models.Model):
     verbose_name = _("Workout Exercise")
     verbose_name_plural = _("Workout Exercises")
 
-class WorkoutExercise(models.Model):
+class ClassExercise(models.Model):
   """Exercises included in a Class Workout Daily Plan, linked to the main Exercise model."""
   daily_plan = models.ForeignKey(ClassWorkoutDailyPlan, on_delete=models.CASCADE, related_name="workout_exercises")
   exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_instances")

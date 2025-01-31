@@ -31,6 +31,13 @@ class Class(models.Model):
     blank=True
   )
 
+  banner_image = models.ImageField(
+    _("Session Banner Image"),
+    upload_to="session_banner_images/",
+    null=True,
+    blank=True,
+  )
+
   def __str__(self):
     return f"{self.title} ({self.level} - {self.intensity})"
 
