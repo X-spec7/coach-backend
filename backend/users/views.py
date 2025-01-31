@@ -244,7 +244,7 @@ class GetCoachesView(APIView):
         coaches_query = coaches_query.filter(coach_profile__listed=listed_bool)
 
       total_count = coaches_query.count()
-      coaches = coaches_query[offset:offset, limit]
+      coaches = coaches_query[offset:offset + limit]
 
       serialized_coaches = GetCoachesResponseDTO(coaches, many=True).data
 
@@ -354,6 +354,7 @@ class GetCoachByIdView(APIView):
         },
         status=status.HTTP_200_OK
       )
+
     except AttributeError as e:
       print("AttributeError:", str(e))
       traceback.print_exc()
