@@ -80,14 +80,17 @@ class GetCoachesRequestDTO(serializers.Serializer):
     offset = serializers.IntegerField(min_value=0, required=True)
     query = serializers.CharField(max_length=20, required=False)
     specialization = serializers.CharField(max_length=20, default="All")
-    listedState = serializers.CharField(max_length=20, default="All")
+    listed = serializers.CharField(max_length=20, default="all")
 
 class GetCoachesTotalCountRequestDTO(serializers.Serializer):
     query = serializers.CharField(max_length=20, required=False)
     specialization = serializers.CharField(max_length=20, default="All")
-    listedState = serializers.CharField(max_length=20, default="All")
+    listed = serializers.CharField(max_length=20, default="all")
 
 class GetCoachByIdRequestDTO(serializers.Serializer):
+    coachId = serializers.IntegerField(required=True)
+
+class ToggleCoachListedStateRequestDTO(serializers.Serializer):
     coachId = serializers.IntegerField(required=True)
 
 class GetCoachesResponseDTO(serializers.ModelSerializer):
@@ -128,7 +131,3 @@ class GetCoachByIdResponseDTO(CoachSerializer):
             # 'classes',
             # 'reviews',
         ]
-
-# class CoachDetailSerializer(serializers.Serializer):
-
-#     class Meta:
