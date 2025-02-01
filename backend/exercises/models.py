@@ -1,8 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from backend.workouts.models import ClientWorkoutDailyPlan, ClassWorkoutDailyPlan
-
+from backend.workouts.models import ClientWorkoutDailyPlan
+from backend.classes.models import Class
 class Exercise(models.Model):
   title = models.CharField(_("Title"), max_length=255, unique=True)
   description = models.TextField(_("Description"), blank=True, null=True)
@@ -41,7 +41,7 @@ class WorkoutExercise(models.Model):
 
 class ClassExercise(models.Model):
   """Exercises included in a Class Workout Daily Plan, linked to the main Exercise model."""
-  daily_plan = models.ForeignKey(ClassWorkoutDailyPlan, on_delete=models.CASCADE, related_name="workout_exercises")
+  class_ref = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="class_exercise")
   exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_instances")
   set_count = models.PositiveIntegerField(_("Set Count"), default=3)
   reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
