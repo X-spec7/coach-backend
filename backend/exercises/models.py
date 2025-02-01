@@ -25,7 +25,7 @@ class Exercise(models.Model):
 class WorkoutExercise(models.Model):
   """Exercises included in a Client Workout Daily Plan, linked to the main Exercise model."""
   daily_plan = models.ForeignKey(ClientWorkoutDailyPlan, on_delete=models.CASCADE, related_name="workout_exercises")
-  exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_instances")
+  exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="workout_exercise")
   set_count = models.PositiveIntegerField(_("Set Count"), default=3)
   reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
   rest_duration = models.PositiveIntegerField(_("Rest Duration (seconds)"), default=30)
@@ -41,8 +41,8 @@ class WorkoutExercise(models.Model):
 
 class ClassExercise(models.Model):
   """Exercises included in a Class Workout Daily Plan, linked to the main Exercise model."""
-  class_ref = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="class_exercise")
-  exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_instances")
+  class_ref = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="class_exercises")
+  exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="class_exercise")
   set_count = models.PositiveIntegerField(_("Set Count"), default=3)
   reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
   rest_duration = models.PositiveIntegerField(_("Rest Duration (seconds)"), default=30)
@@ -53,6 +53,6 @@ class ClassExercise(models.Model):
 
   class Meta:
     app_label = "exercises"
-    verbose_name = _("Workout Exercise")
-    verbose_name_plural = _("Workout Exercises")
+    verbose_name = _("Class Exercise")
+    verbose_name_plural = _("Class Exercises")
 
