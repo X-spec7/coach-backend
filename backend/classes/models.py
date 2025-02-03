@@ -18,9 +18,9 @@ class Class(models.Model):
   intensity = models.CharField(_("Intensity"), max_length=50)
   level = models.CharField(_("Level"), max_length=50)
   price = models.DecimalField(_("Price"), max_digits=10, decimal_places=2)
-  session_count = models.PositiveIntegerField(_("Session Count"))
-  duration_per_session = models.PositiveIntegerField(_("Duration per Session (minutes)"))
-  calorie_per_session = models.PositiveIntegerField(_("Calorie Burn per Session"))
+  session_count = models.PositiveIntegerField(_("Session Count"), default=0)
+  duration_per_session = models.PositiveIntegerField(_("Duration per Session (minutes)"), null=True, blank=True)
+  calorie_per_session = models.PositiveIntegerField(_("Calorie Burn per Session"), null=True, blank=True)
 
   benefits = models.JSONField(_("Benefits"), default=list, blank=True)
   equipments = models.JSONField(_("Equipments"), default=list, blank=True)

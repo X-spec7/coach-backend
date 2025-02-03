@@ -16,7 +16,8 @@ sub_urls = [
     path('authentication/', include('users.api.urls')),
     path('users/', include('users.urls')),
     path("chat/", include('chat.urls')),
-    path("session/", include('session.urls'))
+    path("session/", include('session.urls')),
+    path("classes/", include('classes.urls')),
 ]
 
 app_name = "api"
