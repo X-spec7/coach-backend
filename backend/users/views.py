@@ -227,13 +227,11 @@ class GetCoachesView(APIView):
 
     validated_data = serializer.validated_data
 
-    limit = validated_data.get("limit", 10)
+    limit = validated_data.get("limit", 15)
     offset = validated_data.get("offset", 0)
     query = validated_data.get("query")
     specialization = validated_data.get("specialization")
     listed_filter = validated_data.get("listed")
-
-    print(f"listed filter {listed_filter}")
 
     try:
       coaches_query = User.objects.filter(user_type="Coach")
