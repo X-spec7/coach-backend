@@ -97,11 +97,13 @@ class GetClassesView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"message": "Invalid request data", "details": serializer.error},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
 
     validated_data = serializer.validated_data
+
+    print(f"validated payload data: {validated_data}")
 
     limit = validated_data.get("limit", 15)
     offset = validated_data.get("offset", 0)
