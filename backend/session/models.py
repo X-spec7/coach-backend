@@ -50,8 +50,14 @@ class Session(models.Model):
         verbose_name_plural = _("Sessions")
 
 class ClassSession(Session):
-    used_class = models.ForeignKey(Class, verbose_name=_("Using Class"), related_name="session_class", on_delete=models.CASCADE)
+    price = None
+    goal = None
+    level = None
+    banner_image = None
+    calorie = models.IntegerField(null=False, blank=False)
 
+    used_class = models.ForeignKey(Class, verbose_name=_("Using Class"), related_name="session_class", on_delete=models.CASCADE)
+    
     class Meta:
         app_label = "session"
         verbose_name = _("Class Session")

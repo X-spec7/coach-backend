@@ -103,8 +103,6 @@ class GetClassesView(APIView):
 
     validated_data = serializer.validated_data
 
-    print(f"validated payload data: {validated_data}")
-
     limit = validated_data.get("limit", 15)
     offset = validated_data.get("offset", 0)
     query = validated_data.get("query")

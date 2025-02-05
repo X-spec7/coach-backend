@@ -221,7 +221,7 @@ class GetCoachesView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"message": "Invalid request data", "details": serializer.error},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
 
@@ -281,7 +281,7 @@ class GetCoachesTotalCountView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"message": "Invalid request data", "details": serializer.error},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
     
@@ -335,7 +335,7 @@ class GetCoachByIdView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"message": "Invalid request data", "details": serializer.error},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
     
@@ -379,7 +379,7 @@ class ToggleCoachListedStateView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"message": "Invalid request data", "details": serializer.error},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
 
