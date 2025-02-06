@@ -56,4 +56,3 @@ class ClassExercise(models.Model):
     verbose_name = _("Class Exercise")
     verbose_name_plural = _("Class Exercises")
 
-

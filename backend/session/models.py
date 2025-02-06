@@ -54,6 +54,7 @@ class ClassSession(Session):
     goal = None
     level = None
     banner_image = None
+    coach = None
     calorie = models.IntegerField(null=False, blank=False)
 
     used_class = models.ForeignKey(Class, verbose_name=_("Using Class"), related_name="session_class", on_delete=models.CASCADE)
