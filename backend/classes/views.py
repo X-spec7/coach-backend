@@ -97,7 +97,7 @@ class GetClassesView(APIView):
 
     if not serializer.is_valid():
       return Response(
-        {"message": "Invalid request data", "details": serializer.error},
+        {"message": "Invalid request data", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST
       )
 
@@ -111,11 +111,11 @@ class GetClassesView(APIView):
 
     try:
       classes_query = Class.objects.all()
-      if query:
+      if query and query is not '':
         classes_query = classes_query.filter(title__icontains=query)
-      if category:
+      if category and category is not '':
         classes_query = classes_query.filter(cateogry__icontains=category)
-      if level:
+      if level and level is not '':
         classes_query = classes_query.filter(level__icontains=level)
 
       total_count = classes_query.count()

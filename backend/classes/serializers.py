@@ -4,8 +4,8 @@ from backend.classes.models import Class
 from django.conf import settings
 
 class GetClassesRequestDTO(serializers.Serializer):
-  limit = serializers.IntegerField(min_value=1, required=True)
-  offset = serializers.IntegerField(min_value=0, required=True)
+  limit = serializers.IntegerField(min_value=1, default=6)
+  offset = serializers.IntegerField(min_value=0, default=0)
   query = serializers.CharField(max_length=50, required=False, allow_null=True)
   category = serializers.CharField(max_length=50, required=False, allow_null=True)
   level = serializers.CharField(max_length=50, required=False, allow_null=True)
