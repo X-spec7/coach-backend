@@ -40,13 +40,11 @@ def create_zoom_meeting(payload):
     """Go to zoom documentation https://developers.zoom.us/docs/meeting-sdk/apis/#operation/meetingCreate"""
     try:
         token = get_valid_access_token()
-        print(f"getting token {token}")
         headers = {'Authorization': f'Bearer {token}'}
         url = "https://api.zoom.us/v2/users/me/meetings"
         response = requests.post(url, json=payload, headers=headers)
         # client = ZoomClient(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, api_account_id=ACCOUNT_ID)
         # response = client.meeting.create(**payload)
-        print(f"reponse {response}")
         if response.status_code == 201:
             return response.json()
         elif response.status_code == 401 and response.json().get('code') == 124:

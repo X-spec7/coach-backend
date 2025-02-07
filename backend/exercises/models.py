@@ -42,7 +42,7 @@ class WorkoutExercise(models.Model):
 class ClassExercise(models.Model):
   """Exercises included in a Class Workout Daily Plan, linked to the main Exercise model."""
   class_ref = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="class_exercises")
-  exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="class_exercise")
+  exercise_ref = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="class_exercise")
   set_count = models.PositiveIntegerField(_("Set Count"), default=3)
   reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
   rest_duration = models.PositiveIntegerField(_("Rest Duration (seconds)"), default=30)

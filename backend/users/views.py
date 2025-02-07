@@ -112,8 +112,6 @@ class UpdateCoachProfileView(APIView):
     specialization = data.get("specialization", "")
     certifications_data = data.get("certifications", [])
 
-    print(f"certifications data ----------------------------> {certifications_data}")
-
     avatar_image_base64 = data.get("avatar")
     banner_image_base64 = data.get("banner")
 
@@ -156,7 +154,6 @@ class UpdateCoachProfileView(APIView):
 
       # Handle Certifications
       existing_certifications = {cert.certification_title: cert for cert in coach_profile.certifications.all()}
-      print(f"existing certifications -------------------------> {existing_certifications}")
       updated_certification_titles = set()
 
       for cert_data in certifications_data:
