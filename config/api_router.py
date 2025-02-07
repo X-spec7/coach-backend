@@ -18,6 +18,7 @@ sub_urls = [
     path("chat/", include('chat.urls')),
     path("session/", include('session.urls')),
     path("classes/", include('classes.urls')),
+    path("exercises/", include('exercises.urls')),
 ]
 
 app_name = "api"

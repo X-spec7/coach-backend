@@ -25,8 +25,6 @@ class CreateExerciseView(APIView):
   authentication_classes = [JWTAuthentication]
 
   def post(self, request):
-    user = request.user
-
     serializer = CreateExerciseRequestDTO(data=request.data)
 
     if not serializer.is_valid():
