@@ -57,7 +57,12 @@ class ClassSession(Session):
     coach = None
     calorie = models.IntegerField(null=False, blank=False)
 
-    used_class = models.ForeignKey(Class, verbose_name=_("Using Class"), related_name="session_class", on_delete=models.CASCADE)
+    class_ref = models.ForeignKey(
+        Class,
+        verbose_name=_("Using Class"),
+        related_name="session_class",
+        on_delete=models.CASCADE
+    )
     
     class Meta:
         app_label = "session"

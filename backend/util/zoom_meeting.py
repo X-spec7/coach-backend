@@ -1,0 +1,63 @@
+from requests.auth import HTTPBasicAuth
+from time import time
+from time import time as current_time
+import logging
+import requests
+import os
+import jwt
+
+logger = logging.getLogger(__name__)
+
+CLIENT_ID = os.environ.get("ZOOM_CLIENT_ID", "")
+CLIENT_SECRET = os.environ.get("ZOOM_CLIENT_SECRET", "")
+ACCOUNT_ID = os.environ.get("ZOOM_ACCOUNT_ID", "")
+
+# Global variables to store the access token and its expiration time
+access_token = None
+token_expires_at = 0
+
+def fetch_access_token():
+  """Fetch a new access token using the account credentials."""
+  global access_token, token_expires_at
+  url = f"https://zoom.us/oauth/token?grant_type=account_credentials&account_id={ACCOUNT_ID}"
+  response = requests.post(url, auth=HTTPBasicAuth(CLIENT_ID, CLIENT_SECRET))
+  if response.status_code == 200:
+    token_data = response.json()
+    access_token = token_data['access_token']
+    # Set the token expiration time (current time + expires_in seconds)
+    token_expires_at = current_time() + token_data['expires_in']
+  else:
+    raise Exception(f"Failed to fetch access token: {response.json()}")
+
+def get_valid_access_token():
+  """Retrieve a valid access token, refreshing it if necessary."""
+  if access_token is None or current_time() >= token_expires_at:
+    fetch_access_token()
+  return access_token
+
+def create_zoom_meeting(payload):
+  """Go to zoom documentation https://developers.zoom.us/docs/meeting-sdk/apis/#operation/meetingCreate"""
+  try:
+    token = get_valid_access_token()
+    headers = {'Authorization': f'Bearer {token}'}
+    url = "https://api.zoom.us/v2/users/me/meetings"
+    response = requests.post(url, json=payload, headers=headers)
+    # client = ZoomClient(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, api_account_id=ACCOUNT_ID)
+    # response = client.meeting.create(**payload)
+    if response.status_code == 201:
+      return response.json()
+    elif response.status_code == 401 and response.json().get('code') == 124:
+      fetch_access_token()
+      headers['Authorization'] = f'Bearer {access_token}'
+      # response = client.meeting.create(**payload)
+      url = "https://api.zoom.us/v2/users/me/meetings"
+      response = requests.post(url, json=payload, headers=headers)
+      if response.status_code == 201:
+        return response.json()
+      else:
+        raise Exception(f"Failed to create meeting after token refresh: {response.json()}")
+    else:
+      raise Exception(f"Failed to create meeting: {response.json()}")
+  except Exception as e:
+    print(f"Error response: {e}")
+    raise

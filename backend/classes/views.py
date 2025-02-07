@@ -1,51 +1,52 @@
 import os
 import traceback
-from django.db import ProgrammingError
-import requests
 import base64
-from django.shortcuts import render
+from django.db import transaction
 from django.db.models import Max
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-import logging
+from django.conf import settings
 
 from backend.classes.models import Class
-from django.conf import settings
+from backend.exercises.models import ClassExercise, Exercise
+from backend.session.models import ClassSession, Meeting
+from backend.permissions import IsCoachUserOnly
+from backend.util.zoom_meeting import create_zoom_meeting
 
 from .serializers import (
   GetClassesRequestDTO,
   ClassSerializer,
+  CreateClassRequestSerializer,
 )
 
 class CreateClassView(APIView):
-  permission_classes = [IsAuthenticated]
+  permission_classes = [IsAuthenticated, IsCoachUserOnly]
   authentication_classes = [JWTAuthentication]
 
   def post(self, request):
-    data = request.data
     user = request.user
 
-    if user.user_type != "Coach":
-      return Response({"message": "Only coaches can create class",}, status=status.HTTP_403_FORBIDDEN)
+    serializer = CreateClassRequestSerializer(data=request.data)
+
+    if not serializer.is_valid():
+      return Response(
+        {"message": "Invalid request data", "details": serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST,
+      )
     
-    title = data["title"]
-    category = data["category"]
-    description = data["description"]
-    intensity = data["intensity"]
-    level = data["level"]
-    price = data["price"]
-    benefits = data["benefits"]
-    equipments = data["equipments"]
+    validated_data = serializer.validated_data
     
-    bannerImageBase64 = data.get('bannerImage')
+    bannerImageBase64 = validated_data.pop("banner_image")
+    exercises = validated_data.pop("exercises")
+    sessions = validated_data.pop("sessions")
 
     try:
       max_class_id = Class.objects.aggregate(Max('id'))['id__max']
 
-      banner_image = None 
+      banner_image = None
       if bannerImageBase64:
         format, imgstr = bannerImageBase64.split(';base64,')
         ext = format.split('/')[-1]
@@ -61,27 +62,73 @@ class CreateClassView(APIView):
           f.write(base64.b64decode(imgstr))
         banner_image = f"class_banner_images/{file_name}"
 
-      new_class = Class.objects.create(
-        coach=user,
-        title=title,
-        category=category,
-        description=description,
-        intensity=intensity,
-        level=level,
-        price=price,
-        benefits=benefits,
-        equipments=equipments,
-      )
+      with transaction.atomic():
+        new_class = Class.objects.create(
+          coach=user,
+          **validated_data
+        )
 
-      if banner_image and banner_image != "":
-        new_class.banner_image = banner_image
+        if banner_image and banner_image != "":
+          new_class.banner_image = banner_image
 
-      new_class.save()
+        new_class.save()
+
+        allowed_exercise_fields = {"set_count", "reps_count", "rest_duration", "calorie_per_set"}
+
+        for exercise in exercises:
+          exercise_id = exercise.pop("id")
+          exercise_ref = None
+          try:
+            exercise_ref = Exercise.objects.get(id=exercise_id)
+          except Exercise.DoesNotExist:
+            return Response(
+              {"error": f"Exercise with ID {exercise_id} does not exist"},
+              status=status.HTTP_400_BAD_REQUEST
+            )
+
+          filtered_exercise_data = {k: v for k, v in exercise.items() if k in allowed_exercise_fields}
+
+          ClassExercise.objects.create(
+            class_ref=new_class,
+            exercise_ref=exercise_ref,
+            **filtered_exercise_data,
+          )
+        
+        for session in sessions:
+          createMeetingPayload = {
+            'topic': session.title,
+            'agenda': session.description,
+            'duration': session.duration,
+            'type': 2,
+            'settings': {
+              'join_before_host': False,
+              'waiting_room': True,
+            },
+            'user_id': 'me',
+          }
+
+          zoomRes = create_zoom_meeting(createMeetingPayload)
+
+          meeting = Meeting.objects.create(
+            start_time=zoomRes.get('start_time'),
+            duration=zoomRes.get('duration'),
+            meeting_number=zoomRes.get('id'),
+            encrypted_password=zoomRes.get('encrypted_password'),
+            join_url=zoomRes.get('join_url'),
+            start_url=zoomRes.get('start_url'),
+            creator=user,
+          )
+
+          ClassSession.objects.create(
+            meeting=meeting,
+            **session
+          )
 
       return Response(
         {"message": "class created successfully"},
         status=status.HTTP_201_CREATED
       )
+    
     except Exception as e:
       return Response(
         {"error": "Failed to create session"},

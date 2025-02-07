@@ -276,6 +276,7 @@ class CreateSessionView(APIView):
       with open(file_path, "wb") as f:
         f.write(base64.b64decode(imgstr))
       banner_image = f"session_banner_images/{file_name}"
+
     try:
       createMeetingPayload = {
         'topic': title,
@@ -287,7 +288,7 @@ class CreateSessionView(APIView):
           'join_before_host': False,
           'waiting_room': True,
         },
-        'user_id': 'me'
+        'user_id': 'me',
       }
 
       zoomRes = create_zoom_meeting(createMeetingPayload)
@@ -301,7 +302,6 @@ class CreateSessionView(APIView):
         start_url=zoomRes.get('start_url'),
         creator=user,
       )
-      meeting.save()
 
       session = Session.objects.create(
         title=title,

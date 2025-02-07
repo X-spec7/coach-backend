@@ -1,7 +1,12 @@
+import re
 from rest_framework import serializers
 from backend.classes.models import Class
 
 from django.conf import settings
+
+def camel_to_snake(name):
+  """Convert camelCase to snake_case."""
+  return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
 
 class GetClassesRequestDTO(serializers.Serializer):
   limit = serializers.IntegerField(min_value=1, default=6)
@@ -54,3 +59,76 @@ class ClassSerializer(serializers.ModelSerializer):
     ]
 
     return formatted_exercises
+
+class ClassExerciseSerializer(serializers.Serializer):
+  id = serializers.IntegerField()
+  title = serializers.CharField()
+  description = serializers.CharField()
+  exercise_icon_url = serializers.CharField()
+  exercise_gif_url = serializers.CharField()
+  calorie_per_round = serializers.FloatField()
+  set_count = serializers.IntegerField()
+  reps_count = serializers.IntegerField()
+  rest_duration = serializers.IntegerField()
+  calorie_per_set = serializers.FloatField()
+
+  def to_internal_value(self, data):
+    """Convert camelCase request fields to snake_case before validation."""
+    converted_data = {camel_to_snake(k): v for k, v in data.items()}
+    return super().to_internal_value(converted_data)
+
+  def to_representation(self, instance):
+    """Convert snake_case fields to camelCase when returning data."""
+    data = super().to_representation(instance)
+    return {re.sub(r'_([a-z])', lambda x: x.group(1).upper(), k): v for k, v in data.items()}
+
+class ClassSessionSerializer(serializers.Serializer):
+  title = serializers.CharField()
+  start_date = serializers.DateTimeField()
+  duration = serializers.IntegerField()
+  description = serializers.CharField()
+  total_participant_number = serializers.IntegerField()
+  calorie = serializers.FloatField()
+  equipments = serializers.ListField(child=serializers.CharField(), required=False)
+
+  def to_internal_value(self, data):
+    """Convert camelCase request fields to snake_case before validation."""
+    converted_data = {camel_to_snake(k): v for k, v in data.items()}
+    return super().to_internal_value(converted_data)
+
+  def to_representation(self, instance):
+    """Convert snake_case fields to camelCase when returning data."""
+    data = super().to_representation(instance)
+    return {re.sub(r'_([a-z])', lambda x: x.group(1).upper(), k): v for k, v in data.items()}
+
+class CreateClassRequestSerializer(serializers.Serializer):
+  title = serializers.CharField(max_length=50)
+  category = serializers.CharField(max_length=100)
+  description = serializers.CharField()
+  intensity = serializers.CharField(max_length=50)
+  level = serializers.CharField(max_length=50)
+  price = serializers.FloatField()
+  session_count = serializers.IntegerField(min_value=1)
+  duration_per_session = serializers.IntegerField(min_value=1)
+  calorie_per_session = serializers.IntegerField(min_value=0)
+  benefits = serializers.ListField(child=serializers.CharField())
+  equipments = serializers.ListField(child=serializers.CharField(), required=False)
+  banner_image = serializers.CharField(allow_null=True, required=False)
+  exercises = ClassExerciseSerializer(many=True)
+  sessions = ClassSessionSerializer(many=True)
+
+  def to_internal_value(self, data):
+    """Convert camelCase request fields to snake_case before validation."""
+    converted_data = {camel_to_snake(k): v for k, v in data.items()}
+    return super().to_internal_value(converted_data)
+
+  def to_representation(self, instance):
+    """Convert snake_case fields to camelCase when returning data."""
+    data = super().to_representation(instance)
+    return {re.sub(r'_([a-z])', lambda x: x.group(1).upper(), k): v for k, v in data.items()}
+
+  def validate_banner_image(self, value):
+    """Ensure banner image is a valid base64-encoded string if provided."""
+    if value and not value.startswith('data:image/'):
+      raise serializers.ValidationError("Invalid image format.")
+    return value
