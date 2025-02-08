@@ -191,7 +191,6 @@ class UpdateExerciseView(APIView):
 
     exercise_icon_base64 = validated_data.get('exerciseIcon')
 
-    exercise_icon_base64 = validated_data.get('exerciseIcon')
     if exercise_icon_base64:
       try:
         format, imgstr = exercise_icon_base64.split(';base64,')
