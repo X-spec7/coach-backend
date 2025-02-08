@@ -10,7 +10,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
   exerciseGifUrl = serializers.SerializerMethodField()
 
   class Meta:
-    model: Exercise
+    model = Exercise
     fields = [
       'id',
       'title',
@@ -27,7 +27,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
   
   def get_exerciseGifUrl(self, obj):
     if obj.gif:
-      return f"{settings.MEDIA_URL}{obj.icon}"
+      return f"{settings.MEDIA_URL}{obj.gif}"
     return None
   
 class CreateExerciseRequestDTO(serializers.Serializer):

@@ -27,7 +27,7 @@ class GetExercisesView(APIView):
   authentication_classes = [JWTAuthentication]
 
   def get(self, request):
-    serializer = GetExerciseRequestDTO(request.query_params)
+    serializer = GetExerciseRequestDTO(data=request.query_params)
 
     if not serializer.is_valid():
       return Response(
@@ -92,7 +92,7 @@ class CreateExerciseView(APIView):
     description = validated_data.get('description')
     calorie_per_round = validated_data.get('caloriePerRound')
 
-    max_exercise_id = Exercise.objects.aggregate(Max('id'))['id_max']
+    max_exercise_id = Exercise.objects.aggregate(Max('id'))['id__max']
 
     exercise_icon_base64 = validated_data.get('exerciseIcon')
 
@@ -115,7 +115,7 @@ class CreateExerciseView(APIView):
 
     gif = None
     if exercise_gif_base64:
-      format, imgstr = exercise_icon_base64.split(';base64,')
+      format, imgstr = exercise_gif_base64.split(';base64,')
       ext = format.split('/')[-1]
       if max_exercise_id is not None:
         file_name = f"{max_exercise_id + 1}_exercise_gif.{ext}"
@@ -187,7 +187,7 @@ class UpdateExerciseView(APIView):
     exercise.description = validated_data.get('description', exercise.description)
     exercise.calorie_per_round = validated_data.get('caloriePerRound', exercise.calorie_per_round)
 
-    max_exercise_id = Exercise.objects.aggregate(Max('id'))['id_max']
+    max_exercise_id = Exercise.objects.aggregate(Max('id'))['id__max']
 
     exercise_icon_base64 = validated_data.get('exerciseIcon')
 
@@ -232,3 +232,21 @@ class UpdateExerciseView(APIView):
       {"message": "Exercise updated successfully"},
       status=status.HTTP_200_OK,
     )
+  
+class DeleteExerciseView(APIView):
+  permission_classes = [IsAuthenticated, IsAdminUserOnly]
+  authentication_classes = [JWTAuthentication]
+
+  def delete(self, request, exercise_id):
+    try:
+      exercise = Exercise.objects.get(id=exercise_id)
+      exercise.delete()
+      return Response(
+        {"message": "Exercise deleted successfully"},
+        status=status.HTTP_204_NO_CONTENT
+      )
+    except Exercise.DoesNotExist:
+      return Response(
+        {"error": "Exercise not found"},
+        status=status.HTTP_404_NOT_FOUND
+      )
