@@ -36,4 +36,12 @@ class CreateExerciseRequestDTO(serializers.Serializer):
   caloriePerRound = serializers.IntegerField(required=True)
   exerciseIcon = serializers.CharField(required=False, allow_blank=True)
   exerciseGif = serializers.CharField(required=False, allow_blank=True)
+
+class UpdateExerciseRequestDTO(CreateExerciseRequestDTO):
+  exerciseId = serializers.IntegerField(required=True)
+
+class GetExerciseRequestDTO(serializers.Serializer):
+  query = serializers.CharField(required=False, allow_blank=True)
+  limit = serializers.IntegerField(required=False, default=15)
+  offset = serializers.IntegerField(required=False, default=0)
   
