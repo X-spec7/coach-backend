@@ -9,11 +9,12 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 
 from backend.classes.models import Class
 from backend.exercises.models import ClassExercise, Exercise
 from backend.session.models import ClassSession, Meeting
-from backend.permissions import IsCoachUserOnly
+from backend.permissions import IsCoachUserOnly, IsClientUserOnly
 from backend.util.zoom_meeting import create_zoom_meeting
 
 from .serializers import (
@@ -88,17 +89,37 @@ class CreateClassView(APIView):
 
           filtered_exercise_data = {k: v for k, v in exercise.items() if k in allowed_exercise_fields}
 
-          ClassExercise.objects.create(
-            class_ref=new_class,
-            exercise_ref=exercise_ref,
-            **filtered_exercise_data,
-          )
+          print(f"filtered exercise -----------------------------> {filtered_exercise_data}")
+
+          try:
+            ClassExercise.objects.create(
+              class_ref=new_class,
+              exercise_ref=exercise_ref,
+              **filtered_exercise_data,
+            )
+
+          except Exception as e:
+            return Response(
+              {"error": "Failed to create ClassExercise", "details": str(e)},
+              status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        allowed_session_fields = {
+          "title",
+          "start_date",
+          "duration",
+          "description",
+          "total_participant_number",
+          "calorie",
+          "equipments",
+        }
         
         for session in sessions:
+          print(f"session ----------------------------> {session}")
           createMeetingPayload = {
-            'topic': session.title,
-            'agenda': session.description,
-            'duration': session.duration,
+            'topic': session["title"],
+            'agenda': session["description"],
+            'duration': session["duration"],
             'type': 2,
             'settings': {
               'join_before_host': False,
@@ -119,10 +140,21 @@ class CreateClassView(APIView):
             creator=user,
           )
 
-          ClassSession.objects.create(
-            meeting=meeting,
-            **session
-          )
+          filtered_session_data = {k: v for k, v in session.items() if k in allowed_session_fields}
+
+          try:
+            class_session = ClassSession.objects.create(
+              class_ref=new_class,
+              meeting=meeting,
+              **filtered_session_data
+            )
+          except Exception as e:
+            return Response(
+              {"error": "Failed to create ClassExercise", "details": str(e)},
+              status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+          print(f"class session created ----------------------------> {class_session}")
 
       return Response(
         {"message": "class created successfully"},
@@ -158,17 +190,17 @@ class GetClassesView(APIView):
 
     try:
       classes_query = Class.objects.all()
-      if query and query is not '':
+      if query and query != '':
         classes_query = classes_query.filter(title__icontains=query)
-      if category and category is not '':
+      if category and category != '':
         classes_query = classes_query.filter(cateogry__icontains=category)
-      if level and level is not '':
+      if level and level != '':
         classes_query = classes_query.filter(level__icontains=level)
 
       total_count = classes_query.count()
       classes = classes_query[offset:offset + limit]
 
-      serialized_classes = ClassSerializer(classes, many=True)
+      serialized_classes = ClassSerializer(classes, many=True, context={"request": request})
 
       # TODO: implement getting my classes, featured class, and recommended classes
       return Response(
@@ -192,4 +224,116 @@ class GetClassesView(APIView):
       return Response(
         {"message": "Attribute error occurred", "detail": str(e)},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+class GetClassByIdView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request, class_id):
+    try:
+      spec_class = get_object_or_404(Class, id=class_id)
+
+      serialized_class = ClassSerializer(spec_class, context={"request": request})
+
+      return Response(
+        {
+          "message": "Got class successfully",
+          "class": serialized_class.data,
+        },
+        status=status.HTTP_200_OK,
+      )
+
+    except AttributeError as e:
+      print("AttributeError:", str(e))
+      traceback.print_exc()
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+    except Exception as e:
+      return Response(
+        {"message": "Attribute error occurred", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+      )
+
+class BookClassView(APIView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [JWTAuthentication]
+
+  def post(self, request, class_id):
+    try:
+      target_class = get_object_or_404(Class, id=class_id)
+
+      if request.user in target_class.booked_users.all():
+        return Response(
+          {"message": "You have already booked this class."},
+          status=status.HTTP_400_BAD_REQUEST,
+        )
+
+      target_class.booked_users.add(request.user)
+
+      serialized_class = ClassSerializer(target_class, context={"request": request})
+
+      return Response(
+        {
+          "message": "Class booked successfully.",
+          "class": serialized_class.data,
+        },
+        status=status.HTTP_200_OK,
+      )
+
+    except Exception as e:
+      return Response(
+        {"message": "An error occurred while booking the class", "detail": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+      )
+    
+class JoinClassSessionView(APIView):
+  permission_classes = [IsAuthenticated, IsClientUserOnly]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request, class_session_id):
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+    class_ref = class_session.class_ref
+
+    user = request.user
+
+    if user not in class_ref.booked_users.all():
+      return Response(
+        {"message": "You must book this class before joining."},
+        status=status.HTTP_403_FORBIDDEN
+      )
+
+    return Response(
+      {
+        "message": "Successfully fetched class session join URL",
+        "joinUrl": class_session.meeting.join_url,
+      },
+      status=status.HTTP_200_OK,
+    )
+
+class StartClassSessionView(APIView):
+  permission_classes = [IsAuthenticated, IsCoachUserOnly]
+  authentication_classes = [JWTAuthentication]
+
+  def get(self, request, class_session_id):
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+    class_ref = class_session.class_ref
+
+    user = request.user
+  
+    if class_ref.coach.id == user.id:
+      return Response(
+        {
+          "message": "Successfully fetched class session start url",
+          "startUrl": class_session.meeting.start_url,
+        },
+        status=status.HTTP_200_OK,
+      )
+    else:
+      return Response(
+        {"message": "You are not the creator of this class session"},
+        status=status.HTTP_403_FORBIDDEN,
       )

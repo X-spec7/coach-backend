@@ -41,15 +41,15 @@ class WorkoutExercise(models.Model):
 
 class ClassExercise(models.Model):
   """Exercises included in a Class Workout Daily Plan, linked to the main Exercise model."""
-  class_ref = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="class_exercises")
-  exercise_ref = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="class_exercise")
+  class_ref = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="class_ref")
+  exercise_ref = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="exercise_ref")
   set_count = models.PositiveIntegerField(_("Set Count"), default=3)
   reps_count = models.PositiveIntegerField(_("Reps Count"), default=10)
   rest_duration = models.PositiveIntegerField(_("Rest Duration (seconds)"), default=30)
   calorie_per_set = models.PositiveIntegerField(_("Calorie Burnt per Set"), default=50)
 
   def __str__(self):
-    return f"{self.exercise.title} - {self.set_count} Sets x {self.reps_count} Reps"
+    return f"{self.exercise_ref.title} - {self.set_count} Sets x {self.reps_count} Reps"
 
   class Meta:
     app_label = "exercises"

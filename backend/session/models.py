@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -39,7 +40,7 @@ class Session(models.Model):
     price = models.IntegerField(null=False)
     equipments = models.JSONField(blank=True, null=True)
     booked_users = models.ManyToManyField(User, verbose_name=_("Booked Users"), related_name="booked_sessions")
-    meeting = models.OneToOneField(Meeting, verbose_name=_(""), on_delete=models.CASCADE)
+    meeting = models.OneToOneField(Meeting, verbose_name=_("session_meeting"), on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.title}"
@@ -49,13 +50,16 @@ class Session(models.Model):
         verbose_name = _("Session")
         verbose_name_plural = _("Sessions")
 
-class ClassSession(Session):
-    price = None
-    goal = None
-    level = None
-    banner_image = None
-    coach = None
+class ClassSession(models.Model):
+    title = models.CharField(max_length=50, blank=False, null=False)
+    start_date = models.DateTimeField(null=False)
+    duration = models.IntegerField(null=False)
+    description = models.TextField(blank=False, null=False)
     calorie = models.IntegerField(null=False, blank=False)
+    total_participant_number = models.IntegerField(null=False)
+    equipments = models.JSONField(blank=True, null=True)
+
+    meeting = models.OneToOneField(Meeting, verbose_name=_("class_session_meeting"), on_delete=models.CASCADE)
 
     class_ref = models.ForeignKey(
         Class,
