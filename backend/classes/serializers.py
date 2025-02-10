@@ -1,6 +1,8 @@
 import re
 from rest_framework import serializers
 from backend.classes.models import Class
+from backend.exercises.models import ClassExercise
+from backend.session.models import ClassSession
 
 from django.conf import settings
 
@@ -16,21 +18,26 @@ class GetClassesRequestDTO(serializers.Serializer):
   level = serializers.CharField(max_length=50, required=False, allow_null=True)
 
 class ClassSerializer(serializers.ModelSerializer):
-  coachId = serializers.IntegerField(source='id')
   caloriePerSession = serializers.IntegerField(source='calorie_per_session')
   sessionCount = serializers.IntegerField(source='session_count')
   durationPerSession = serializers.IntegerField(source='duration_per_session')
 
+  coachId = serializers.SerializerMethodField()
   coachFullname = serializers.SerializerMethodField()
   classBannerImageUrl = serializers.SerializerMethodField()
   exercises = serializers.SerializerMethodField()
+  sessions = serializers.SerializerMethodField()
+  booked = serializers.SerializerMethodField()
 
   class Meta:
     model = Class
     fields = [
-      "id", "title", "description", "category", "intensity", "level", "price", "benefits", "equipments"
-      "coachId", "classBannerImageUrl", "coachFullname", "sessionCount", "durationPerSession", "caloriePerSession", "exercises"
+      "id", "title", "description", "category", "intensity", "level", "price", "benefits", "equipments",
+      "coachId", "classBannerImageUrl", "coachFullname", "sessionCount", "durationPerSession", "caloriePerSession", "exercises", "sessions", "booked",
     ]
+
+  def get_coachId(self, obj):
+    return obj.coach.id if obj.coach else None
 
   def get_coachFullname(self, obj):
     return obj.coach.full_name if obj.coach else None
@@ -38,18 +45,25 @@ class ClassSerializer(serializers.ModelSerializer):
   def get_classBannerImageUrl(self, obj):
     if obj.banner_image:
       return f"{settings.MEDIA_URL}{obj.banner_image}"
+    
+  def get_booked(self, obj):
+    """Checks if the current user has booked this class."""
+    request = self.context.get("request")
+    if request and request.user.is_authenticated:
+        return obj.booked_users.filter(id=request.user.id).exists()
+    return False
   
   def get_exercises(self, obj):
-    class_exercises = obj.class_exercises.all()
+    class_exercises = ClassExercise.objects.filter(class_ref=obj)
 
     formatted_exercises = [
       {
         "id": class_exercise.id,
-        "title": class_exercise.exercise.title,
-        "description": class_exercise.exercise.description,
-        "exerciseIconUrl": f"{settings.MEDIA_URL}{class_exercise.exercise.icon}" if class_exercise.icon else None,
-        "exerciseGifUrl": f"{settings.MEDIA_URL}{class_exercise.exercise.gif}" if class_exercise.gif else None,
-        "caloriePerRound": class_exercise.exercise.calorie_per_round,
+        "title": class_exercise.exercise_ref.title,
+        "description": class_exercise.exercise_ref.description,
+        "exerciseIconUrl": f"{settings.MEDIA_URL}{class_exercise.exercise_ref.icon}" if class_exercise.exercise_ref.icon else None,
+        "exerciseGifUrl": f"{settings.MEDIA_URL}{class_exercise.exercise_ref.gif}" if class_exercise.exercise_ref.gif else None,
+        "caloriePerRound": class_exercise.exercise_ref.calorie_per_round,
         "setCount": class_exercise.set_count,
         "repsCount": class_exercise.reps_count,
         "restDuration": class_exercise.rest_duration,
@@ -59,6 +73,25 @@ class ClassSerializer(serializers.ModelSerializer):
     ]
 
     return formatted_exercises
+  
+  def get_sessions(self, obj):
+    class_sessions = ClassSession.objects.filter(class_ref=obj)
+
+    formatted_sessions = [
+      {
+        "id": class_session.id,
+        "title": class_session.title,
+        "startDate": class_session.start_date,
+        "duration": class_session.duration,
+        "description": class_session.description,
+        "totalParticipantNumber": class_session.total_participant_number,
+        "calorie": class_session.calorie,
+        "equipments": class_session.equipments,
+      }
+      for class_session in class_sessions
+    ]
+
+    return formatted_sessions
 
 class ClassExerciseSerializer(serializers.Serializer):
   id = serializers.IntegerField()

@@ -211,8 +211,8 @@ class JoinSessionView(APIView):
 
     if session.coach.id == user.id:
       return Response(
-          {"zoom_url": session.meeting.start_url},
-          status=status.HTTP_200_OK
+        {"zoom_url": session.meeting.start_url},
+        status=status.HTTP_200_OK
       )
     
     try:
@@ -223,14 +223,14 @@ class JoinSessionView(APIView):
         )
 
       return Response(
-          {"zoom_url": session.meeting.join_url},
-          status=status.HTTP_200_OK
+        {"zoom_url": session.meeting.join_url},
+        status=status.HTTP_200_OK
       )
       
     except Session.DoesNotExist:
       return Response(
-          {"error": "Session not found."},
-          status=status.HTTP_404_NOT_FOUND,
+        {"error": "Session not found."},
+        status=status.HTTP_404_NOT_FOUND,
       )
     except Exception as e:
       logger.error(f"Error joining session: {e}")
@@ -239,7 +239,6 @@ class JoinSessionView(APIView):
         status=status.HTTP_500_INTERNAL_SERVER_ERROR
       )
     
-
 class CreateSessionView(APIView):
   permission_classes = [IsAuthenticated]
   authentication_classes = [JWTAuthentication]
